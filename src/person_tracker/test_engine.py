@@ -13,17 +13,18 @@ class EngineTests(unittest.TestCase):
         return engine
 
     def test_constructor_uses_nonblocking_input(self):
+        # Windows Python3.11 lacks this Linux API; the test supplies its fake.
         process=mock.Mock()
         process.stdin.fileno.return_value=123
         with mock.patch('server.subprocess.Popen',return_value=process), \
-                mock.patch('server.os.set_blocking') as nonblocking:
+                mock.patch('server.os.set_blocking',create=True) as nonblocking:
             Engine(Path('models'),detector=Path('detector'))
         nonblocking.assert_called_once_with(123,False)
 
     def test_nonblocking_setup_failure_closes_child(self):
         process=mock.Mock();process.poll.return_value=None
         with mock.patch('server.subprocess.Popen',return_value=process), \
-                mock.patch('server.os.set_blocking',side_effect=OSError('unsupported')):
+                mock.patch('server.os.set_blocking',side_effect=OSError('unsupported'),create=True):
             with self.assertRaises(OSError):Engine(Path('models'),detector=Path('detector'))
         process.terminate.assert_called_once_with()
 

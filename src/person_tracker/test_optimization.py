@@ -89,7 +89,7 @@ class OptimizationTests(unittest.TestCase):
         self.assertEqual(a.motion.moves,[])
     def test_cpu_affinity_is_scoped_to_detector_command(self):
         child=mock.Mock()
-        with mock.patch('server.subprocess.Popen',return_value=child) as spawn, mock.patch('server.os.set_blocking'):
+        with mock.patch('server.subprocess.Popen',return_value=child) as spawn, mock.patch('server.os.set_blocking',create=True):
             Engine(Path('models'),detector=Path('detector'),threads=2,opencv_threads=1,detector_cpus='1,2')
         command=spawn.call_args[0][0]
         self.assertEqual(command[:3],['taskset','-c','1,2']);self.assertEqual(command[-2:],['2','1'])

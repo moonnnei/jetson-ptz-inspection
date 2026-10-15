@@ -39,8 +39,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 2353,
-      "sha256": "365a7dd8bc8504ba21a31f912a1135640571327d7b8ee5a7ba442d3b3040ee48"
+      "bytes": 2512,
+      "sha256": "1f5f5a495ac91fcfc43b18a4d3117ad36bfce1a9b6a316d598dbfe42c9625122"
     },
     {
       "path": "CHECKS.md",
@@ -434,8 +434,8 @@
     },
     {
       "path": "src/person_tracker/test_engine.py",
-      "bytes": 3013,
-      "sha256": "200ea57a06377d59e5878003b49db2c6914db6872cc2dfbc24f221508ea0087e"
+      "bytes": 3116,
+      "sha256": "fb741f4d567a8af744d4e55bf980366d716f8f8022cadbecb3da5b8cbe70aee1"
     },
     {
       "path": "src/person_tracker/test_live_preview.py",
@@ -444,8 +444,8 @@
     },
     {
       "path": "src/person_tracker/test_optimization.py",
-      "bytes": 6087,
-      "sha256": "78da56813f15bc59b3eda67229fcf2bf86ba524e7c5d1dc842d9151d42a9fa93"
+      "bytes": 6099,
+      "sha256": "a95ba14ad1debb932bda961d437fb892f7143c08200c21ba29fe4d0bea5d2a7d"
     },
     {
       "path": "src/person_tracker/test_rtsp_capture.py",
