@@ -1,0 +1,16 @@
+{
+  "camera": "http://192.168.1.64",
+  "user": "YOUR_CAMERA_USER",
+  "host": "0.0.0.0",
+  "port": 8769,
+  "rotation": 180,
+  "model_dir": "models/yolo26n",
+  "detector": "build/detector",
+  "runtime_dir": "var/tracker-rtsp",
+  "frame_source": "rtsp",
+  "rtsp_url": "rtsp://192.168.1.64:1554/Streaming/channels/101",
+  "rtsp_decoder": "hardware",
+  "rtsp_fps": 10,
+  "rtsp_width": 1280,
+  "rtsp_height": 720
+}

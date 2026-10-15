@@ -1,0 +1,12 @@
+{
+  "model": "yolo26n.pt",
+  "ultralytics": "8.4.0",
+  "torch": "2.7.1+cpu",
+  "imgsz": 320,
+  "batch": 1,
+  "half": false,
+  "output": "yolo26n_ncnn_model",
+  "output_layout": "batch,anchors,84: xyxy + 80 class scores",
+  "postprocess": "host global top300 scores, conf>=0.25, no NMS",
+  "reason": "PNNX could not convert default end-to-end TopK/Gather; one-to-one network and weights unchanged"
+}

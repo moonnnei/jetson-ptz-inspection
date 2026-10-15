@@ -1,0 +1,23 @@
+{
+  "camera": "http://192.168.1.64",
+  "user": "YOUR_CAMERA_USER",
+  "host": "0.0.0.0",
+  "port": 8770,
+  "rotation": 180,
+  "model_dir": "models/yolo26n",
+  "detector": "build/detector",
+  "runtime_dir": "var/tracker-optimized",
+  "frame_source": "rtsp",
+  "rtsp_url": "rtsp://192.168.1.64:1554/Streaming/channels/101",
+  "rtsp_decoder": "hardware",
+  "rtsp_fps": 20,
+  "rtsp_width": 1280,
+  "rtsp_height": 720,
+  "detector_threads": 2,
+  "opencv_threads": 1,
+  "detector_cpus": "1,2",
+  "frame_policy": "latest",
+  "control_mode": "adaptive",
+  "loop_interval": 0.02,
+  "rtsp_cpus": "0,3,4,5"
+}

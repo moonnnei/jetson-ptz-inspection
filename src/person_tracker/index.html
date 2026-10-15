@@ -1,0 +1,44 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TX2 人物追踪</title><style>
+*{box-sizing:border-box}body{margin:0;background:#101b2c;color:#ecf2fa;font:16px system-ui,sans-serif}main{max-width:1080px;margin:24px auto;padding:0 20px}h1{font-size:28px}p{line-height:1.7;color:#b1c2d7}.bar{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}button{border:0;padding:14px 22px;border-radius:9px;font:inherit;font-weight:600;cursor:pointer;background:#284965;color:white}#start{background:#148460}#stop{background:#c43d42;font-size:18px}canvas{display:block;width:100%;background:#060d17;border:1px solid #334258;border-radius:12px}#liveStage{position:relative;overflow:hidden;width:100%;height:540px;background:#060d17;border:1px solid #334258;border-radius:12px}#liveImage{position:absolute;left:50%;top:50%;transform-origin:center}#center{position:absolute;left:42%;top:40%;width:16%;height:20%;border:1px dashed #ffffff80;pointer-events:none}#msg{color:#79e6bb;font-weight:600}#error{color:#ffb4b4}small{color:#acbdd2}.metrics{padding:14px;background:#1b2b42;border-radius:9px;font-variant-numeric:tabular-nums}button:disabled{opacity:.45;cursor:not-allowed}.selected{outline:2px solid #79e6bb}[hidden]{display:none!important}
+</style><main><small>JETSON TX2 · YOLO26n · 海康云台</small><h1>人物追踪</h1>
+<p>先校准方向，再开始追踪。中心虚线框内不转动，首次测试请缓慢走动。</p>
+<div class="bar"><button id="cal">① 校准方向</button><button id="start">② 开始追踪</button><button id="stop">停止追踪</button></div>
+<p id="msg">正在连接…</p><p id="error"></p>
+<div class="bar"><button id="liveMode" class="selected">实时画面</button><button id="detectMode">检测画面与目标框</button></div>
+<div id="liveStage"><img id="liveImage" alt="实时相机画面"><div id="center"></div></div>
+<canvas id="view" width="960" height="540" hidden></canvas>
+<p class="metrics" id="metrics">等待相机画面</p>
+<p>实时画面持续播放；检测和云台动作独立运行。检测画面中的黄框是当前目标，按需刷新。只追踪一个人，不做人脸身份识别；多人交叉或遮挡后可能换人。</p>
+<p>目标丢失时停止转动。关闭或切到后台后，连接超时会停止。相机底座移动、图像翻转或变焦后，请重新校准。</p>
+<small id="sourceHint">正在确认采集方式。停止按钮停止云台跟随，检测仍继续。</small></main>
+<script>
+const token='__TOKEN__',canvas=document.getElementById('view'),ctx=canvas.getContext('2d'),live=document.getElementById('liveImage'),stage=document.getElementById('liveStage');
+let mode='live',rotation=180,rtsp=false,streamOpen=false,lastPreview=0,retryTimer=null,lastFrameCount=null,lastMetricTime=performance.now(),detectionFps=0;
+async function post(path){const r=await fetch('/api/'+path,{method:'POST',headers:{'X-Control-Token':token}});const d=await r.json();if(!r.ok)throw Error(d.error||'请求失败');return d;}
+async function act(path){try{await post(path);document.getElementById('error').textContent='';}catch(e){document.getElementById('error').textContent=e.message;}}
+document.getElementById('cal').onclick=()=>act('calibrate');document.getElementById('start').onclick=()=>act('start');document.getElementById('stop').onclick=()=>act('stop');
+setInterval(()=>{if(!document.hidden)post('heartbeat').catch(()=>{});},800);
+function closeStream(){clearTimeout(retryTimer);retryTimer=null;live.removeAttribute('src');streamOpen=false;}
+function openStream(){if(mode==='live'&&rtsp&&!document.hidden&&!streamOpen){streamOpen=true;live.src='/api/live.mjpeg?t='+Date.now();}}
+function fitLive(){const w=stage.clientWidth,r=rotation%180!==0,rawW=live.naturalWidth||1280,rawH=live.naturalHeight||720;stage.style.height=(w*(r?rawW/rawH:rawH/rawW))+'px';live.style.width=(r?parseFloat(stage.style.height):w)+'px';live.style.height=(r?w:parseFloat(stage.style.height))+'px';live.style.transform='translate(-50%,-50%) rotate('+rotation+'deg)';}
+live.onload=fitLive;window.addEventListener('resize',fitLive);
+live.onerror=()=>{streamOpen=false;if(mode==='live'&&rtsp&&!document.hidden){document.getElementById('sourceHint').textContent='实时画面正在重连；控制状态见上方。';retryTimer=setTimeout(openStream,1000);}};
+function selectMode(next){mode=next;stage.hidden=mode!=='live';canvas.hidden=mode!=='detect';document.getElementById('liveMode').classList.toggle('selected',mode==='live');document.getElementById('detectMode').classList.toggle('selected',mode==='detect');if(mode==='live'){fitLive();openStream();}else closeStream();}
+document.getElementById('liveMode').onclick=()=>selectMode('live');document.getElementById('detectMode').onclick=()=>selectMode('detect');
+document.addEventListener('visibilitychange',()=>{if(document.hidden){closeStream();post('stop').catch(()=>{});}else openStream();});
+window.addEventListener('pagehide',()=>{closeStream();fetch('/api/stop',{method:'POST',headers:{'X-Control-Token':token},keepalive:true}).catch(()=>{});});
+function rect(b,color,width){ctx.strokeStyle=color;ctx.lineWidth=width;ctx.strokeRect(b[0]*canvas.width,b[1]*canvas.height,(b[2]-b[0])*canvas.width,(b[3]-b[1])*canvas.height);}
+async function refresh(){try{const r=await fetch(mode==='detect'?'/api/frame':'/api/status');if(!r.ok)throw Error('状态请求失败');const s=await r.json();
+rotation=s.rotation||0;rtsp=s.frame_source==='rtsp';document.getElementById('liveMode').disabled=!rtsp;if(!rtsp&&mode==='live')selectMode('detect');else openStream();fitLive();
+document.getElementById('msg').textContent=s.message+(s.frame_age>2?' · 画面已过期':'');document.getElementById('error').textContent=s.error||'';
+document.getElementById('start').disabled=!s.calibrated||s.enabled||s.calibrating||s.motion_busy||s.frame_age===null||s.frame_age>1.5;
+document.getElementById('cal').disabled=s.enabled||s.calibrating||s.motion_busy;
+document.getElementById('sourceHint').textContent=mode==='live'?'实时画面来自持续采集的 MJPEG，不等待 YOLO 或云台动作。目标框在检测画面查看。':'检测图片与框来自同一帧，降低预览频率以优先保持检测和云台响应。';
+const now=performance.now();if(lastFrameCount===null){lastFrameCount=s.frames||0;lastMetricTime=now;}if(now-lastMetricTime>1000){detectionFps=((s.frames||0)-lastFrameCount)*1000/(now-lastMetricTime);lastFrameCount=s.frames||0;lastMetricTime=now;}
+document.getElementById('metrics').textContent='人数 '+(s.persons||[]).length+' ｜ 检测 '+detectionFps.toFixed(1)+' 帧/秒 ｜ 推理 '+Math.round(s.inference_ms||0)+' ms ｜ 取帧+处理 '+Math.round(s.pipeline_ms||0)+' ms'+(s.motion_busy?' ｜ 云台动作中，检测继续':'')+(s.result_to_command_ms!==undefined?' ｜ 结果至指令 '+Math.round(s.result_to_command_ms)+' ms':'');
+const p=s.preview||s;if(mode==='detect'&&s.jpeg&&(p.frames||0)!==lastPreview){const im=new Image();await new Promise((resolve,reject)=>{im.onload=resolve;im.onerror=reject;im.src='data:image/jpeg;base64,'+s.jpeg;});canvas.width=im.width;canvas.height=im.height;ctx.drawImage(im,0,0);lastPreview=p.frames||0;
+ctx.setLineDash([8,6]);rect([.42,.40,.58,.60],'#fff8',1);ctx.setLineDash([]);for(const person of p.persons||[]){rect(person.bbox,'#49bad7',2);ctx.fillStyle='#49bad7';ctx.font='16px sans-serif';ctx.fillText('person '+person.confidence.toFixed(2),person.bbox[0]*canvas.width,Math.max(18,person.bbox[1]*canvas.height-5));}if(p.target)rect(p.target.bbox,'#ffe166',4);}
+}catch(e){document.getElementById('msg').textContent='连接中断：云台将因心跳超时停止';}finally{setTimeout(refresh,100);}}
+fitLive();refresh();
+</script></html>

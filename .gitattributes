@@ -1,0 +1,16 @@
+* text=auto eol=lf
+*.sh text eol=lf
+*.py text eol=lf
+*.cpp text eol=lf
+*.html text eol=lf
+*.bin binary
+*.param text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+LICENSE text eol=lf
+
+# Preserve exact validated model companion bytes across Git checkouts.
+models/yolo26n/classes.txt -text
+models/yolo26n/model.ncnn.param -text
