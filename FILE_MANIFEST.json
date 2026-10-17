@@ -64,13 +64,13 @@
     },
     {
       "path": "README.en.md",
-      "bytes": 5207,
-      "sha256": "bb0a3a3a3f2b5489b1f31c71d54ca008d48a7c77d0ba2a46d349ae3e414343c2"
+      "bytes": 8744,
+      "sha256": "d6e006681a04b55359b0b64111e49f0767f26189a5ea2f3c87771a93ac20997e"
     },
     {
       "path": "README.md",
-      "bytes": 8200,
-      "sha256": "afefd4395b938c2ed3c1b2fd44fd4b179b600891f6d14ce7934cf223f1f889d8"
+      "bytes": 11055,
+      "sha256": "7a98da0019f6e9a6adb026b8fa51d4bad0cf6efd292c17784028320b43e7c70d"
     },
     {
       "path": "SECURITY.md",
@@ -163,6 +163,11 @@
       "sha256": "4d7a246985ec34383aee5edba4627da24cdf906634baa7067884753cb9114523"
     },
     {
+      "path": "docs/README.md",
+      "bytes": 3551,
+      "sha256": "0cf6aee540dbe63bc1c4e5f00113b7d10cf9532bb28fbd8ebdeffa55eece1c0e"
+    },
+    {
       "path": "docs/RELEASE_NOTES_v0.5.0-demo.md",
       "bytes": 1580,
       "sha256": "cd0b1916d59a4a3b9e14b69c82d23a867c471acfad793182659977afcf5561ab"
@@ -236,6 +241,11 @@
       "path": "legacy/yolo_live.py",
       "bytes": 11739,
       "sha256": "aa46d041b18a9b78ff95dd15c9f3bbe25e8022104b631d96d60b8360732387f4"
+    },
+    {
+      "path": "models/README.md",
+      "bytes": 2803,
+      "sha256": "fe87c663d2638418d2794a3fe49f0ed603be0e569786c3755a270f4041e73801"
     },
     {
       "path": "models/yolo26n/MODEL_CARD.md",
@@ -321,6 +331,11 @@
       "path": "scripts/verify_models.py",
       "bytes": 542,
       "sha256": "d235b3079ccb09cb911d6ddd4826b0e00ea193be5dfe6d852f53e592b84ff657"
+    },
+    {
+      "path": "src/README.md",
+      "bytes": 3641,
+      "sha256": "6f39d3a9b57b86769d6780df6cd339e8de290ffe8b710e66705db6697060d9ec"
     },
     {
       "path": "src/image_infer/infer.cpp",

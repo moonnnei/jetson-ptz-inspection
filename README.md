@@ -1,10 +1,30 @@
 # Jetson PTZ Inspection
 
-[English](README.en.md) · [演示说明](docs/DEMO.md) · [部署](docs/DEPLOYMENT.md) · [接口](docs/INSPECTION_DEMO_INTERFACES.md) · [贡献](CONTRIBUTING.md) · [AGPL-3.0](LICENSE)
+[![离线检查](https://github.com/moonnnei/jetson-ptz-inspection/actions/workflows/ci.yml/badge.svg)](https://github.com/moonnnei/jetson-ptz-inspection/actions/workflows/ci.yml)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
+[![演示版本](https://img.shields.io/badge/demo-v0.5.0-orange.svg)](https://github.com/moonnnei/jetson-ptz-inspection/releases/tag/v0.5.0-demo)
+
+[English](README.en.md) · [文档导航](docs/README.md) · [演示说明](docs/DEMO.md) · [部署](docs/DEPLOYMENT.md) · [接口](docs/INSPECTION_DEMO_INTERFACES.md) · [贡献](CONTRIBUTING.md)
 
 基于Jetson TX2、YOLO26n NCNN与海康DS-2DC2402IW-DE3 S6的视觉巡检实验工程，将持续视频、目标发现、云台定位、视觉居中、光学变焦和图像记录串成可复现的链路。
 
-**当前使用位置固定的人体代替仪表。真实仪表检测与读数、完整场景覆盖和真实多目标验收尚未完成。** 不生成假仪表读数，采集记录中的reading保持null。
+最终目标是：平台暂停后自动发现面板上的仪表，规划访问顺序，依次将每个仪表移到画面中央、放大成像，再调用读数算法并保存结果。TX2负责图像处理、推理、任务调度和云台控制；电脑通过网页操作和查看结果。
+
+**当前公开主线使用位置固定的人体代替仪表。真实仪表检测与读数、完整场景覆盖和真实多目标验收尚未完成。** 不生成假仪表读数，采集记录中的`reading`保持`null`。随仓库提供的是通用物体检测模型，不能直接当作仪表识别或读数模型。
+
+## 从这里开始
+
+| 想了解什么 | 入口 |
+| --- | --- |
+| 项目整体方案与技术分工 | [项目方案](docs/项目方案.md)、[源码导航](src/README.md) |
+| 没有TX2，先查看工程能否通过离线检查 | 下方“普通电脑先运行检查” |
+| 有TX2和相机，准备实机运行 | [部署手册](docs/DEPLOYMENT.md)、[巡检操作](docs/INSPECTION_DEMO.md) |
+| 查看模型来源、输入输出和替换注意事项 | [模型目录说明](models/README.md) |
+| 核对演示效果与尚未完成的功能 | 下方“实机证据”、[路线图](docs/ROADMAP.md) |
+
+![设备连接拓扑：相机、TX2和开发电脑通过同一局域网连接](docs/assets/topology.png)
+
+相机通过RTSP提供视频，通过ISAPI接收云台命令；TX2运行检测和巡检服务。浏览器显示的是服务生成的检测预览，采集视频、模型检测和浏览器显示各自有独立耗时。
 
 ## 能做什么
 
@@ -66,14 +86,16 @@ flowchart LR
 
 ## 普通电脑先运行检查
 
-电脑建议使用Python3.11或3.12，不需要额外pip依赖：
+电脑建议使用Git和Python3.11或3.12，不需要额外pip依赖。在终端中运行：
 
 ```bash
+git clone https://github.com/moonnnei/jetson-ptz-inspection.git
+cd jetson-ptz-inspection
 python scripts/test_local.py
 python scripts/check_release.py --verify-manifest
 ```
 
-检查包含Python3.5语法、模型哈希、原跟随与巡检逻辑测试、发布守卫测试和公开文件审计，不连接相机。Windows无符号链接权限时可能跳过相应测试。GitHub Actions提供Linux和Windows离线工作流，实际状态以仓库运行结果为准；工作流不负责ARM64编译或机械验收。
+已克隆的工程可从两条Python命令开始。检查包含Python3.5语法、模型哈希、原跟随与巡检逻辑测试、发布守卫测试和公开文件审计，不连接相机。Windows无符号链接权限时可能跳过相应测试。[GitHub Actions](https://github.com/moonnnei/jetson-ptz-inspection/actions/workflows/ci.yml)提供Linux和Windows离线工作流，顶部徽章链接至实际运行记录；工作流不负责ARM64编译或机械验收。
 
 ## 在TX2运行巡检Demo
 
@@ -113,6 +135,14 @@ legacy/                历史CSI与YOLOv3-tiny脚本，非主线
 ```
 
 `build/`、`var/`、本地配置、缓存及私有实验资料在运行时生成，不属于公开源码。
+
+目录内也有独立的[源码README](src/README.md)、[模型README](models/README.md)和[文档README](docs/README.md)，可从对应目录继续阅读。
+
+## 一轮巡检会留下什么
+
+成功采集目标后，服务保存配对的整帧图像与目标裁图，并记录目标编号、时间、云台位置、倍率、检测分数和中心误差。网页提供JSON和CSV导出；具体字段、终态和错误含义见[巡检接口](docs/INSPECTION_DEMO_INTERFACES.md)。目标编号仅在当前一轮有效，不代表跨轮次的人员身份或仪表资产编号。
+
+当前保存的是960×540检测预览，尚未接入独立高分辨率仪表成像。放大后会再次居中，但未实现主动调焦搜索；读数接口保留为空。完整的仪表应用还需要仪表检测、清晰度验收、读数模型及单位和量程等业务信息。
 
 ## 文档与后续工作
 

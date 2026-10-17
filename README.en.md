@@ -1,10 +1,45 @@
 # Jetson PTZ Inspection
 
-[中文](README.md) · [License](LICENSE) · [Demo](docs/DEMO.md) · [Contributing](CONTRIBUTING.md)
+[![Offline checks](https://github.com/moonnnei/jetson-ptz-inspection/actions/workflows/ci.yml/badge.svg)](https://github.com/moonnnei/jetson-ptz-inspection/actions/workflows/ci.yml)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
+[![Demo version](https://img.shields.io/badge/demo-v0.5.0-orange.svg)](https://github.com/moonnnei/jetson-ptz-inspection/releases/tag/v0.5.0-demo)
+
+[中文](README.md) · [Documentation index](docs/README.md) · [Deployment](docs/DEPLOYMENT.md) · [Demo](docs/DEMO.md) · [Contributing](CONTRIBUTING.md)
 
 An experimental visual inspection pipeline for a Jetson TX2 and a Hikvision DS-2DC2402IW-DE3 S6 PTZ camera. It combines RTSP acquisition, YOLO26n detection with NCNN, bounded scanning, position-based deduplication, visit planning, image-based centering, optical zoom and paired image capture.
 
-Stationary people currently stand in for instruments. **Actual instrument detection, meter readings, full-scene coverage and real multi-target acceptance are pending.** The controller records `reading=null`; it does not generate demonstration readings.
+The intended instrument workflow is to stop the platform, discover meters, plan a visit order, center and magnify each meter, then invoke a reading model and store the result. The TX2 handles acquisition, inference, scheduling and camera control. A computer provides browser access to the service.
+
+Stationary people currently stand in for instruments in the **public implementation**. **Actual instrument detection, meter readings, full-scene coverage and real multi-target acceptance are pending.** The controller records `reading=null`; it does not generate demonstration readings. The bundled general object detector is not a meter detector or a meter-reading model.
+
+## Start here
+
+| Task | Guide |
+| --- | --- |
+| Understand the architecture | [Project plan](docs/项目方案.md), [source guide](src/README.md) |
+| Check the project without hardware | Offline checks below |
+| Deploy on a TX2 with a camera | [Deployment](docs/DEPLOYMENT.md), [inspection operation](docs/INSPECTION_DEMO.md) |
+| Inspect the model contract | [Model guide](models/README.md) |
+| Review demonstrated and pending work | Physical results below, [roadmap](docs/ROADMAP.md) |
+
+Most detailed guides are currently in Chinese; filenames and source entry points are linked from each directory's README.
+
+## Pipeline
+
+```mermaid
+flowchart LR
+    A[Camera RTSP] --> B[Hardware decode / latest frame]
+    B --> C[YOLO26n / NCNN CPU]
+    C --> D[Bounded scan / deduplication]
+    D --> E[Visit planning]
+    E --> F[Absolute positioning]
+    F --> G[Local P visual centering]
+    G --> H[Optical zoom / recenter]
+    H --> I[Paired image / result capture]
+    I --> J[Next target / STOP]
+```
+
+The scan currently samples only −8°, 0° and +8° around the initial pan angle. A finite-state controller combines absolute positioning with a separately calibrated local visual mapping at each zoom level. The visual correction is proportional control, not PID. RTSP carries video, while ISAPI carries camera commands. Video, inference and browser display have separate latency budgets.
 
 ## What has been tested
 
@@ -27,14 +62,16 @@ Hardware video decoding and model GPU inference are different stages: this model
 
 ## Offline checks
 
-On a normal computer with Python3.11 or3.12:
+On a normal computer with Git and Python 3.11 or 3.12, without extra pip dependencies:
 
 ```bash
+git clone https://github.com/moonnnei/jetson-ptz-inspection.git
+cd jetson-ptz-inspection
 python scripts/test_local.py
 python scripts/check_release.py --verify-manifest
 ```
 
-These checks use the standard library, validate the included model hashes, and run fake-IO regressions. They do not connect to cameras or move hardware. GitHub Actions runs them on Linux and Windows; the workflow's existence does not imply that a remote run has already passed. Windows may skip a symlink test when unprivileged symlink creation is unavailable.
+For an existing checkout, start with the two Python commands. These checks use the standard library, validate the included model hashes, and run fake-IO regressions. They do not connect to cameras or move hardware. [GitHub Actions](https://github.com/moonnnei/jetson-ptz-inspection/actions/workflows/ci.yml) runs them on Linux and Windows; the badge links to the actual workflow results. Windows may skip a symlink test when unprivileged symlink creation is unavailable. These checks do not establish ARM64 build compatibility or physical control performance.
 
 ## Run on TX2
 
@@ -49,7 +86,13 @@ cp config/inspection.example.json config/inspection.local.json
 bash scripts/run_inspection_demo.sh --config config/inspection.local.json
 ```
 
-The example's RTSP port1554 and180° rotation match the tested installation; check them for your setup. Enter the camera password interactively. Open `http://<TX2-IP>:8772/`. Startup observes and requests zero-speed STOP; starting inspection from the page causes physical movements. Use one controller per camera and keep the base and targets stationary. The currently supported camera limits are explicitly checked; similar model names do not establish compatibility.
+The example's RTSP port 1554 and 180° rotation match the tested installation; check them for your setup. Enter the camera password interactively. Open `http://<TX2-IP>:8772/`. Startup observes and requests zero-speed STOP; starting inspection from the page causes physical movements. Use one controller per camera and keep the base and targets stationary. The currently supported camera limits are explicitly checked; similar model names do not establish compatibility. The package contains converted weights and source, not a full system image or prebuilt ARM64 executables.
+
+## Capture outputs
+
+For each captured target, the service saves a paired full preview and crop, together with the target number, timestamp, pose, zoom, detection score and center errors. JSON and CSV exports are available from the page. The current full preview is 960×540, not a separate high-resolution capture. Target IDs are local to one run, not persistent person identities or meter asset IDs. See the [interface contract](docs/INSPECTION_DEMO_INTERFACES.md) for fields and terminal states.
+
+Zooming is followed by centering; active focus search is not implemented. Real instrument work still requires meter detection, image-quality acceptance, a reading model and unit/range metadata.
 
 ## Layout and documentation
 
@@ -59,6 +102,8 @@ The example's RTSP port1554 and180° rotation match the tested installation; che
 - `tools/model_export/`: reproducible PC export and validation tools.
 - `docs/`: architecture, interfaces, operations, validation and [roadmap](docs/ROADMAP.md).
 - `.github/`: offline CI and issue/PR templates.
+
+Directory guides: [source README](src/README.md), [models README](models/README.md), [documentation README](docs/README.md).
 
 Use [contribution instructions](CONTRIBUTING.md) to refresh the explicit file manifest after a change. See [security guidance](SECURITY.md) before handling credentials or operating hardware. Public demo footage is optional and is not currently bundled; [recording guidance](docs/DEMO.md) explains the scope.
 
