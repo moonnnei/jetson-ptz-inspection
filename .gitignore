@@ -44,3 +44,16 @@ tmp/
 dist/
 .vscode/
 .idea/
+
+# Private datasets, trained checkpoints and live databases
+datasets/
+data/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.engine
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.db

@@ -2,12 +2,13 @@
 
 [项目首页](../README.md) · [部署](../docs/DEPLOYMENT.md) · [巡检接口](../docs/INSPECTION_DEMO_INTERFACES.md)
 
-当前主要入口是固定目标巡检，采用人体检测验证“发现—定位—居中—放大—留图”链路。人员连续跟随是单独的实验入口，两者共享采集和检测基础设施。
+当前入口包括场景审核控制台和人体替代仪表的运动 Demo。前者建立真实仪表清单与回访参考，默认不控制硬件；后者保留“发现—定位—居中—放大—留图”的实机演示。PC 建图工具见 [scene_mapping](../tools/scene_mapping/README.md)，模块边界见[系统架构](../docs/ARCHITECTURE.md)。
 
 ## 模块分工
 
 | 目录 | 主要职责 | 入口与关键文件 |
 | --- | --- | --- |
+| `inspection_console/` | 独立场景审核、仪表档案、网格规划及尚未接入实机的调度器 | [server.py](inspection_console/server.py)、[store.py](inspection_console/store.py)、[planner.py](inspection_console/planner.py)、[scheduler.py](inspection_console/scheduler.py)、[操作说明](../docs/REVIEW_CONSOLE.md) |
 | `inspection_demo/` | 网页服务、任务状态机、设备适配与同帧留图 | [demo_server.py](inspection_demo/demo_server.py)、[controller.py](inspection_demo/controller.py)、[real_io.py](inspection_demo/real_io.py)、[evidence_worker.py](inspection_demo/evidence_worker.py) |
 | `person_tracker/` | 共享RTSP采集、C++检测器、ISAPI控制，以及独立人员跟随服务 | [server.py](person_tracker/server.py)、[rtsp_capture.py](person_tracker/rtsp_capture.py)、[rtsp_worker.py](person_tracker/rtsp_worker.py)、[detector.cpp](person_tracker/detector.cpp)、[ptz_control.py](person_tracker/ptz_control.py) |
 | `image_infer/` | 使用转换模型进行通用物体单图推理 | [infer.cpp](image_infer/infer.cpp) |

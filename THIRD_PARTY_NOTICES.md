@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | YOLO26n原模型与导出依赖 | Ultralytics8.4.0，官方yolo26n.pt | 官方提供AGPL-3.0与企业许可选项；转换不消除原有许可义务 |
 | NCNN源码 | commit 6c52e59dfb610cbd77946bea19099aaf96f8dcc1 | BSD3-Clause及其内部第三方组件条款 |
-| OpenCV | 原设备3.3.1 | 使用设备已有安装，不随本包重分发库 |
+| OpenCV / NumPy | TX2 现有 OpenCV 3.3.1；PC 可选 OpenCV 4.12.0.88 / NumPy 2.2.6 | 使用设备已有安装或用户安装的 PC 依赖，不随本包重分发库；PC 版本见 tools/scene_mapping/requirements.txt |
 | PyTorch与PNNX等PC工具 | requirements-pc-lock.txt列明 | 仅电脑侧可选导出环境，不随包提供虚拟环境 |
 
 已经附上 `third_party/licenses/Ultralytics-AGPL-3.0.txt` 和 `NCNN-BSD-3-Clause.txt`。本包的转换模型由官方YOLO26n COCO权重派生，导出脚本和适配代码同时提供，源模型地址见下。没有把该模型重新声明为MIT或BSD许可。
@@ -21,7 +21,7 @@
 ## 发布归属与许可边界
 
 - 原创集成代码：Jetson PTZ Inspection contributors，2026；按根目录AGPL-3.0提供，贡献者可在Git提交中使用自己的真实署名或公开署名。未代填个人姓名、学校或合作单位为权利人。
-- 本地开发和发布整理没有代替发布者创建远程仓库。公开状态以实际GitHub仓库为准。
+- 公开源码仓库为项目首页所链接的 GitHub 仓库，现场数据与训练权重不在公开清单内；历史演示标签与当前开发版分别保留。
 - legacy目录仅包含本工程早期集成脚本，不附Darknet源码、共享库或旧模型；它不是当前NCNN主线的可独立运行安装包。
 - 不声明拥有Ultralytics模型架构、预训练权重或NCNN/OpenCV的原创权。项目名称及厂商名称仅用于说明兼容性和来源。
 - 完整对应源码的范围及具体再分发义务按适用许可核对，不以“只上传部分脚本”或“转换格式”规避模型许可。

@@ -1,11 +1,4 @@
 {
-  "release": "0.5.0-demo",
-  "verification_date": "2026-10-15",
-  "runtime_changes": "Bounded stationary-person scanning, route planning, absolute positioning, local visual P control, zoom and same-frame capture; same-direction calibration preload",
-  "precision": "FP32",
-  "model_input": 320,
-  "inference_backend": "NCNN CPU",
-  "motion_verification": "2026-10-15 single-person proxy run passed including first-time 1x/1.5x calibration, scan, centering and capture in 47.724s; real meter reading and real multi-target acceptance remain pending",
   "files": [
     {
       "path": ".gitattributes",
@@ -29,23 +22,23 @@
     },
     {
       "path": ".github/workflows/ci.yml",
-      "bytes": 970,
-      "sha256": "9fcde0d3838f9adcf73ac753d2f4255eca62d34c57b578fc7e469c2750c75595"
+      "bytes": 1715,
+      "sha256": "b947a131028749a23d6ec2c5851e426bed6ac1af12e9426b1c322263f450e570"
     },
     {
       "path": ".gitignore",
-      "bytes": 668,
-      "sha256": "e93235cf05479cda37495aa658ec9a34a360e01515211f2f81b78e9f002b0e09"
+      "bytes": 814,
+      "sha256": "eb6a279b7f896b41a32621bd11e2c35d0531a188fafc6227c2685af8482af0f0"
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 2512,
-      "sha256": "1f5f5a495ac91fcfc43b18a4d3117ad36bfce1a9b6a316d598dbfe42c9625122"
+      "bytes": 6456,
+      "sha256": "539742af334bba62fb9a7e0ceba163ba20a8ad97a874cb55099d52d81aca7010"
     },
     {
       "path": "CHECKS.md",
-      "bytes": 8658,
-      "sha256": "a126dc45082dc069cf18351c3e18410fcba6bd3aa9f8a61ffa19f6324420990f"
+      "bytes": 15686,
+      "sha256": "c0be7185ebb7fc8f3922f3913d49241a5a4c1d00d52dae5d6f36d7cafea43b73"
     },
     {
       "path": "CMakeLists.txt",
@@ -64,13 +57,13 @@
     },
     {
       "path": "README.en.md",
-      "bytes": 8744,
-      "sha256": "d6e006681a04b55359b0b64111e49f0767f26189a5ea2f3c87771a93ac20997e"
+      "bytes": 8064,
+      "sha256": "49cfa9905f1712f53a45682ad20e1fc5b5fad3850324692ea8ea9d9273b58315"
     },
     {
       "path": "README.md",
-      "bytes": 11055,
-      "sha256": "7a98da0019f6e9a6adb026b8fa51d4bad0cf6efd292c17784028320b43e7c70d"
+      "bytes": 8651,
+      "sha256": "501446c5a66273b1a223ec145a9cee8ead41e629acb52a167ecbff1c44c01607"
     },
     {
       "path": "SECURITY.md",
@@ -79,8 +72,8 @@
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
-      "bytes": 2983,
-      "sha256": "1f2522e48d7128da5269f971e76ef341fdf978f8f9e800a8b150bd18e5ffd8b3"
+      "bytes": 3176,
+      "sha256": "cb00a33da2a4551c622e1ac31c07910ac78e0d7b00dd5a0160c290fce657ea79"
     },
     {
       "path": "config/inspection.example.json",
@@ -111,6 +104,11 @@
       "path": "config/tracker.rtsp.example.json",
       "bytes": 409,
       "sha256": "b39c305c08713485a5ce4303c811232e2229e71479344f85dc5d9a40b692220d"
+    },
+    {
+      "path": "docs/ARCHITECTURE.md",
+      "bytes": 3740,
+      "sha256": "8a6a2ed7e2b04e3f17f4f3bd4e9f4623de2e9a89cef7cef694515091a82041dd"
     },
     {
       "path": "docs/DEMO.md",
@@ -158,14 +156,19 @@
       "sha256": "bce6f487c413544391acf96df17babc6d60fef36f6a289a4c9cd31c57cc25839"
     },
     {
+      "path": "docs/PANORAMA_REVIEW_2026-10-21.md",
+      "bytes": 5698,
+      "sha256": "2cf1ec0dd417c6d1b3b8838ef3e519404567c53452bb2aaf1878d84e35570927"
+    },
+    {
       "path": "docs/PUBLISHING.md",
-      "bytes": 7111,
-      "sha256": "4d7a246985ec34383aee5edba4627da24cdf906634baa7067884753cb9114523"
+      "bytes": 7546,
+      "sha256": "a85def45418d2db502cf5a92b1a35f44c84c9e40c82604487d052ccc9b1c73c5"
     },
     {
       "path": "docs/README.md",
-      "bytes": 3551,
-      "sha256": "0cf6aee540dbe63bc1c4e5f00113b7d10cf9532bb28fbd8ebdeffa55eece1c0e"
+      "bytes": 4630,
+      "sha256": "f2f882a5443da8ab3b63317a58cfaaa1af911b5e27448a167c0890369e8d6bad"
     },
     {
       "path": "docs/RELEASE_NOTES_v0.5.0-demo.md",
@@ -183,9 +186,29 @@
       "sha256": "64bef508b3949301f8af2f7c424e8ce744fe6f7ac9136440c881a38756a685bc"
     },
     {
+      "path": "docs/REVIEW_CONSOLE.md",
+      "bytes": 15068,
+      "sha256": "595ec8a740ee101af9a72d24b096a01cbbca66f57b835d991d1d25f4a150090b"
+    },
+    {
+      "path": "docs/REVISIT_REFERENCE.md",
+      "bytes": 6936,
+      "sha256": "677d9b76fb8d270c0268f501ce8b3ee3a68d70dc82d821f176e2ddbd5faf9d69"
+    },
+    {
+      "path": "docs/RING_SCAN_2026-10-21.md",
+      "bytes": 8039,
+      "sha256": "703f526078ad0e8a3faa1a7fddabcf1ef5a8629b41270cd39bad630a82770053"
+    },
+    {
       "path": "docs/ROADMAP.md",
-      "bytes": 1796,
-      "sha256": "dc3c9b9e6371f3aaa3378aeb0837c92f484740ee4c8b94386255132fbae0f596"
+      "bytes": 2701,
+      "sha256": "531a29ef4c534e087210a6f99d97d34d77264215a5d4dbd87572ebf14bfcff5d"
+    },
+    {
+      "path": "docs/SCENE_MAPPING_VALIDATION_2026-10-20.md",
+      "bytes": 6377,
+      "sha256": "9592b0309afc148b624b0b198a419117c88e6bcb3d3323841b691701d4e5531d"
     },
     {
       "path": "docs/TRACKING_PRIORITY_2026-10-13.md",
@@ -283,19 +306,39 @@
       "sha256": "5f65c9a2ccce4108d4ea62de9a36b7652414cfd87944ba03be6aaa1bd0c737c7"
     },
     {
+      "path": "scripts/capture_review_views.py",
+      "bytes": 4399,
+      "sha256": "45d8c815d244a424667a3193ca2885caa628378fb29cf50a5b61c35c6d648395"
+    },
+    {
+      "path": "scripts/capture_ring_views.py",
+      "bytes": 3982,
+      "sha256": "2be4269eda132cddc503aa6f9e84fb4b6aed88eaa2d7a7d62b24409b2f3d0459"
+    },
+    {
       "path": "scripts/check_live.py",
       "bytes": 2642,
       "sha256": "b4b0d42f6e76629e305404b2a1e58fcfb91554b06e3009cb897d7da0b04b7fb9"
     },
     {
       "path": "scripts/check_release.py",
-      "bytes": 6371,
-      "sha256": "f8afa30c5783ae6dd2c82298d7aa60f3c5abea8a02ba049c0e01de390877c41f"
+      "bytes": 6465,
+      "sha256": "cbf2e90f5e31c018400fa2b5d3cc535b8b9460d7545f341a4f75af46757c5a64"
     },
     {
       "path": "scripts/fetch_ncnn.py",
       "bytes": 2355,
       "sha256": "a725af8bffb75837a128bd66eb21fbcdeb72e01f4536a7d2b2ef0ce8e9d60d8d"
+    },
+    {
+      "path": "scripts/import_panorama_candidates.py",
+      "bytes": 894,
+      "sha256": "4561216e9f81c0287a5c75d81a1be38ebd47d4ead1b2b7ec89f650b43bee0eea"
+    },
+    {
+      "path": "scripts/import_review.py",
+      "bytes": 1341,
+      "sha256": "9ef91c6dcae73314e077314c4ba928fcaeaa4fabb36606bf30d2b2dc10636d6d"
     },
     {
       "path": "scripts/run_image.sh",
@@ -308,19 +351,24 @@
       "sha256": "b41a29bd709776cde78c0b7f0ef883561a5a5fba93997b88bb59afec2d65df42"
     },
     {
+      "path": "scripts/run_review_console.sh",
+      "bytes": 153,
+      "sha256": "6fe22b12338c36c785c6ab7a3003c742edf1f95aefd8507d0f6cf4430a54522a"
+    },
+    {
       "path": "scripts/run_tracker.sh",
       "bytes": 151,
       "sha256": "a85e2f09e1bfb4623ca982a7614efa531f80fb84b681ca3cd1649a2225b605ef"
     },
     {
       "path": "scripts/test_local.py",
-      "bytes": 1281,
-      "sha256": "e29cf6201233c113ed07f5f2af503c8cf13ea44585dc5cbc5f492bef0aeb6571"
+      "bytes": 1414,
+      "sha256": "a8c5409eea1ee7127c3708bf02e47efc5ab41082341a1830b883431107ef8ca8"
     },
     {
       "path": "scripts/test_release.py",
-      "bytes": 3384,
-      "sha256": "912b941212e88acb9fcff298f88369afa3cf9915de01093dd2bcfde7719a088b"
+      "bytes": 3474,
+      "sha256": "9c6ad830a8cf1a33c42ee05bec418a256027ace7625eca211fd51dee160740b3"
     },
     {
       "path": "scripts/update_manifest.py",
@@ -334,13 +382,98 @@
     },
     {
       "path": "src/README.md",
-      "bytes": 3641,
-      "sha256": "6f39d3a9b57b86769d6780df6cd339e8de290ffe8b710e66705db6697060d9ec"
+      "bytes": 4122,
+      "sha256": "6ea1b1546a90007c3ffafc38b408dbca298f86bd99a67d4a621224a74ffd33ad"
     },
     {
       "path": "src/image_infer/infer.cpp",
       "bytes": 8010,
       "sha256": "565b2f49f988848860c1ccac74a7a5548844b44a469db6f57f677810b60fa9d2"
+    },
+    {
+      "path": "src/inspection_console/app.js",
+      "bytes": 27243,
+      "sha256": "760173ea74273aaeed5d4b2fe76963d6179a819f16b4f1a1c9b6bc8cd3b7dfaa"
+    },
+    {
+      "path": "src/inspection_console/index.html",
+      "bytes": 8196,
+      "sha256": "aaae49a45c58d4bb7fa0486cfceab2d7ae9b73ed0c24bc72cf9cfda6a5880725"
+    },
+    {
+      "path": "src/inspection_console/planner.py",
+      "bytes": 3671,
+      "sha256": "0f91ef18237ec50de19456e7e517b4886f4634bb67d495e0cc4c900191e2b91a"
+    },
+    {
+      "path": "src/inspection_console/references.py",
+      "bytes": 5088,
+      "sha256": "7ac9b810ec2e5f0ade47620665a0bd161257ab9c54c20496c25af0d86577c6f3"
+    },
+    {
+      "path": "src/inspection_console/ring_capture.py",
+      "bytes": 8956,
+      "sha256": "179e8554536cdde0472e879294ca0139d7e2fe77c5ab4e95953c912ddaf2e59d"
+    },
+    {
+      "path": "src/inspection_console/ring_coordinates.py",
+      "bytes": 6064,
+      "sha256": "acd2d2f2421c07f317ffa911a2629c092dfb27940990756530cee64aba7504bf"
+    },
+    {
+      "path": "src/inspection_console/scan_capture.py",
+      "bytes": 9343,
+      "sha256": "98e0a580f1312cccc6e71588757ff2798a15f0a9838736bdc7ab4f041bd5082b"
+    },
+    {
+      "path": "src/inspection_console/scheduler.py",
+      "bytes": 9093,
+      "sha256": "5f7d19b45ee17277ba6efbd381329569147ef816cefc20974c9ab80937db4904"
+    },
+    {
+      "path": "src/inspection_console/server.py",
+      "bytes": 10680,
+      "sha256": "23035234d9e7e574c0e74e2b4cf1f7992cc23150f160d8843dd99bc13c9415e2"
+    },
+    {
+      "path": "src/inspection_console/store.py",
+      "bytes": 30810,
+      "sha256": "2643cbed07f68d0cfdc81052667ed97621b1f301b179e598dca80a0de289e753"
+    },
+    {
+      "path": "src/inspection_console/style.css",
+      "bytes": 10405,
+      "sha256": "1bd6caad6deb2da2e1725318a9b9965c349f4894cc4d5f2a381e15a5bf250e79"
+    },
+    {
+      "path": "src/inspection_console/test_console.py",
+      "bytes": 22378,
+      "sha256": "48c1e91308406c2acd66b85872e2b37617bfd41af4275f4900fc8b4b66c46a9e"
+    },
+    {
+      "path": "src/inspection_console/test_panorama_registry.py",
+      "bytes": 7005,
+      "sha256": "fa820e5126d801d60b8e01d140943730b9058bb79b99a2299d0956c299668221"
+    },
+    {
+      "path": "src/inspection_console/test_references.py",
+      "bytes": 3654,
+      "sha256": "1ebb3d32ba9b415135ee32ed721743c1d54a68696c6e4b8e111c34ea413661c2"
+    },
+    {
+      "path": "src/inspection_console/test_ring.py",
+      "bytes": 6031,
+      "sha256": "7b240653645d4669eb71e8ead9b0e5fed830f5f78db1f9994ef8a5a4771056a3"
+    },
+    {
+      "path": "src/inspection_console/test_ring_coordinates.py",
+      "bytes": 2837,
+      "sha256": "2237746f0fe0da8a00d5cea433d81ed2e279c10600cbeb0cc0f87b4744edcdbf"
+    },
+    {
+      "path": "src/inspection_console/test_scan.py",
+      "bytes": 4017,
+      "sha256": "2d5375392f79e99df720dc84212d8b828e684fa7b53f0c8057d9e96b29241db7"
     },
     {
       "path": "src/inspection_demo/controller.py",
@@ -533,6 +666,96 @@
       "sha256": "bfe25196d348162f5f0a1a2239788eef8d455ca160a911f9e4f574b9d4ecc288"
     },
     {
+      "path": "tools/scene_mapping/README.md",
+      "bytes": 2627,
+      "sha256": "0f0dade6556e183f519131b1ff4ed953a55d0e28a9bc2de1ba07070ea88ef25a"
+    },
+    {
+      "path": "tools/scene_mapping/build_map.py",
+      "bytes": 4073,
+      "sha256": "d2ef730c1e72d6935644e8076387e296419f0b60cfc6ebd1760e4ad9dabe8b0b"
+    },
+    {
+      "path": "tools/scene_mapping/build_ring_map.py",
+      "bytes": 8307,
+      "sha256": "425133372ab0b6be2d59fae8a13b85ab291af0ab4a6a09d708a224aca7968f5e"
+    },
+    {
+      "path": "tools/scene_mapping/check_revisit.py",
+      "bytes": 6953,
+      "sha256": "84bb8158b510b1624ac401f6d0c1f4adac88934a59c232f009a601f77a861884"
+    },
+    {
+      "path": "tools/scene_mapping/detect_panorama.py",
+      "bytes": 11297,
+      "sha256": "c26ddcbfe8c3a3798e1f878ad7b4d24e036f66b43dac5bae3370f8e0ece0c4fd"
+    },
+    {
+      "path": "tools/scene_mapping/detect_views.py",
+      "bytes": 5557,
+      "sha256": "619d755d85ec0a5074d2d68c26c2939649b32ef3a15d1c0225be27541012dbda"
+    },
+    {
+      "path": "tools/scene_mapping/geometry.py",
+      "bytes": 7968,
+      "sha256": "2b5c43489248550a299ac09dc5216b88f84b2f3e7d792a1dbd4f05efe4566f79"
+    },
+    {
+      "path": "tools/scene_mapping/relocalize.py",
+      "bytes": 6545,
+      "sha256": "958626d3c02d2163e7d464542723f9ddff10eadba1bba8dd17fc702b8292ac18"
+    },
+    {
+      "path": "tools/scene_mapping/requirements.txt",
+      "bytes": 38,
+      "sha256": "c41ee51c6ea296879d02490b1c63ae210b50d9a3f1cf11b4fe10a5382bc3eb8e"
+    },
+    {
+      "path": "tools/scene_mapping/ring_projection.py",
+      "bytes": 6490,
+      "sha256": "a9c01ae3f4eb3ff8699b90fb696bfde6b96b0979e79c0a54138b99cccebcccf4"
+    },
+    {
+      "path": "tools/scene_mapping/shape_candidates.py",
+      "bytes": 7647,
+      "sha256": "44c4c8edec2a98ed3348a22cdbf9af68a3ce8de857826a3e6a26a97bf61969de"
+    },
+    {
+      "path": "tools/scene_mapping/test_candidates.py",
+      "bytes": 2755,
+      "sha256": "4b8cc00babfd5628e7440b0cb67108b07d94467d311eb928271a986ca9c7518a"
+    },
+    {
+      "path": "tools/scene_mapping/test_discovery.py",
+      "bytes": 1537,
+      "sha256": "33fee5169c5487642f8d36138f5ba067ab8a967566472407a8c2097aaf8f3936"
+    },
+    {
+      "path": "tools/scene_mapping/test_geometry.py",
+      "bytes": 2876,
+      "sha256": "76367f94f634d1c1f810229d264c0e070fecaccf492c878f82216825750e6b56"
+    },
+    {
+      "path": "tools/scene_mapping/test_panorama_discovery.py",
+      "bytes": 3619,
+      "sha256": "f1f1721f6bc2d370f5d0263fa8449ec5584318e55cc2399efc9cd4488649c68a"
+    },
+    {
+      "path": "tools/scene_mapping/test_relocalize.py",
+      "bytes": 4404,
+      "sha256": "521f0f03f2e8d1369a338ccf2ea1acbb0b8adb99553894a2a0c8b9db60963776"
+    },
+    {
+      "path": "tools/scene_mapping/test_ring_map.py",
+      "bytes": 2948,
+      "sha256": "6a5240db63b7b876d9952818fe98e94aaee0fd2b17c0be70e6195d0be395f3f0"
+    },
+    {
+      "path": "tools/scene_mapping/test_ring_projection.py",
+      "bytes": 2162,
+      "sha256": "6766881db6a3af018e3d91fcbf4b6ca11266235e06a037ebe4d18b5c17dc7166"
+    },
+    {
       "path": "tools/validation/benchmark_detector.py",
       "bytes": 15369,
       "sha256": "c07d21090691fa54a4aa30cbfa61e9734f70a0757849e50a131a7ce49d12ac3f"
@@ -558,16 +781,135 @@
       "sha256": "4fe25ce275689529b61679d7a8971f7b3541150808d6eca8a2d2bf76fda71e7a"
     }
   ],
-  "automated_checks": {
-    "pc": [
-      159,
-      73
-    ],
-    "pc_skipped": 1,
-    "board_demo": [
-      73
-    ],
-    "board_skipped": 0
+  "license": "AGPL-3.0",
+  "baseline_experiment": {
+    "release": "0.5.0-demo",
+    "verification_date": "2026-10-15",
+    "runtime_changes": "Bounded stationary-person scanning, route planning, absolute positioning, local visual P control, zoom and same-frame capture; same-direction calibration preload",
+    "precision": "FP32",
+    "model_input": 320,
+    "inference_backend": "NCNN CPU",
+    "motion_verification": "2026-10-15 single-person proxy run passed including first-time 1x/1.5x calibration, scan, centering and capture in 47.724s; real meter reading and real multi-target acceptance remain pending",
+    "automated_checks": {
+      "pc": [
+        159,
+        73
+      ],
+      "pc_skipped": 1,
+      "board_demo": [
+        73
+      ],
+      "board_skipped": 0
+    }
   },
-  "license": "AGPL-3.0"
+  "release": "unreleased-scene-review-20261021",
+  "base_release": "0.5.0-demo",
+  "verification_date": "2026-10-21",
+  "published": false,
+  "runtime_changes": "Review console, bounded ring capture, PC panorama-first proposals, estimated source appearance checks and preservation of human decisions; fixed-base physical periodic capture pending",
+  "motion_verification": "One three-view capture at anchor pan +/-5 degrees completed in 9.244 seconds including return and final STOP; no calibrated meter revisit or periodic physical inspection",
+  "automated_checks": {
+    "pc_stdlib_total": 272,
+    "pc_stdlib_passed": 271,
+    "pc_stdlib_skipped": 1,
+    "pc_optional_scene_tools_passed": 13,
+    "board_console_scan_passed": 36,
+    "board_console_python": "3.5.2"
+  },
+  "development_pipeline": {
+    "capture": "TX2 ISAPI bounded snapshot acquisition",
+    "mapping": "PC OpenCV ORB/RANSAC local sector overview",
+    "discovery": "PC PyTorch CPU / Ultralytics 8.4.0 / trusted local single-class meter model / input 640",
+    "board_service": "Python 3.5 standard library / SQLite / review_only",
+    "physical_periodic_capture": false,
+    "automatic_reading": false,
+    "ring_mapping": "PC spherical stitching attempt with uncalibrated angle-projection fallback; source picker for original-view review"
+  },
+  "revisit_reference_checks": {
+    "verification_date": "2026-10-20",
+    "pc_console_scan_reference_passed": 44,
+    "tx2_console_scan_reference_passed": 44,
+    "tx2_python": "3.5.2",
+    "pc_optional_scene_tools_passed": 24,
+    "historical_target_checks": 4,
+    "historical_matches": 4,
+    "synthetic_target_erasure_rejected": 4,
+    "current_probe_target_checks": 2,
+    "current_probe_appearance_rejected": 2,
+    "new_physical_motion": false,
+    "physical_revisit_verified": false,
+    "browser_interaction_verified": false,
+    "note": "Earlier automated_checks describes the prior full regression; only affected suites rerun here."
+  },
+  "ring_scan_verification": {
+    "physical_runs": 1,
+    "frames": 19,
+    "source_resolution": [
+      2560,
+      1440
+    ],
+    "capture_seconds": 165.59103,
+    "axis_range_degrees": [
+      0,
+      350
+    ],
+    "return_and_stop_confirmed": true,
+    "spherical_stitching_status": 3,
+    "preview": "uncalibrated_angle_assisted_cylindrical_4096x600",
+    "adjacent_overlap_passed": 15,
+    "adjacent_overlap_total": 18,
+    "end_overlap_accepted": true,
+    "pc_model_calls": 260,
+    "candidate_observations": 39,
+    "pc_console_scan_reference_passed": 60,
+    "tx2_console_scan_reference_passed": 60,
+    "pc_optional_scene_tools_passed": 33,
+    "production_http_images_verified": 39,
+    "production_browser_interaction_verified": false,
+    "physical_periodic_capture": false
+  },
+  "panorama_first_verification": {
+    "initial_pc_model_calls": 24,
+    "repair_source_model_calls": 3,
+    "total_new_pc_model_calls": 27,
+    "panorama_candidates": 3,
+    "appearance_consistent_sources": 3,
+    "source_appearance_scores": [
+      0.9547990991686713,
+      0.9392019157456438,
+      0.7528027811796737
+    ],
+    "final_source_detector_matches": 1,
+    "visual_truth": "background_false_positives",
+    "current_map_candidates": 42,
+    "current_map_confirmed_instruments": 0,
+    "pc_console_passed": 74,
+    "tx2_console_passed": 74,
+    "pc_optional_scene_tools_passed": 39,
+    "current_http_images_verified": 3,
+    "production_browser_interaction_verified": false,
+    "physical_motion": false,
+    "physical_periodic_capture": false,
+    "user_selected_interval_seconds": null,
+    "trailing_4_confirmed_typo": true,
+    "period_selection_deferred": true,
+    "source_mapping": "estimated_cylindrical_review_with_appearance_check",
+    "source_to_ptz_calibration_validated": false
+  },
+  "source_publication_preparation": {
+    "date": "2026-10-21",
+    "target": "https://github.com/moonnnei/jetson-ptz-inspection",
+    "tagged_release": false,
+    "new_physical_experiments": false,
+    "current_stdlib_test_counts": [
+      159,
+      73,
+      74,
+      4
+    ],
+    "current_scene_test_counts": [
+      39
+    ],
+    "note": "Main source update; v0.5.0-demo tag and historical validation metadata retained."
+  }
 }

@@ -26,7 +26,8 @@ class ReleaseGuardTests(unittest.TestCase):
 
     def test_private_and_escaping_paths_cannot_be_added(self):
         for name in ('../outside.py', '/absolute.py', 'var/run.json', '.ssh/key',
-                     'config/camera.local.json', 'scene.jpg', '.env', 'C:/secret.py'):
+                     'config/camera.local.json', 'scene.jpg', '.env', 'C:/secret.py',
+                     'models/best.pt','models/model.onnx','registry.sqlite3','camera.db'):
             with self.assertRaises(ValueError):
                 public_name(name)
         self.assertEqual(public_name('.github/workflows/ci.yml'), '.github/workflows/ci.yml')

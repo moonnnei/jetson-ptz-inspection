@@ -14,7 +14,8 @@ ROOT = Path(__file__).resolve().parents[1]
 PRIVATE_PARTS = {'.git', '.codex', '.agents', '.aws', '.ssh', '.venv',
                  '__pycache__', 'build', 'var', 'runs', 'tmp'}
 PRIVATE_SUFFIXES = ('.local.json', '.log', '.jsonl', '.pid', '.jpg', '.jpeg',
-                    '.mp4', '.pem', '.key', '.pfx', '.p12', '.pyc', '.zip')
+                    '.mp4', '.pem', '.key', '.pfx', '.p12', '.pyc', '.zip',
+                    '.pt', '.pth', '.ckpt', '.onnx', '.engine', '.sqlite', '.sqlite3', '.db')
 PATTERNS = (
     ('private-key', rb'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----'),
     ('github-token', rb'(?:gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{40,})'),

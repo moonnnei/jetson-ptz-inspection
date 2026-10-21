@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="control-token" content="__TOKEN__">
+  <title>仪表巡检 · 场景审核控制台</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand"><span class="brand-mark">◉</span><div>仪表巡检<small>JETSON PTZ INSPECTION</small></div></div>
+    <div class="nav-caption">工作空间</div>
+    <nav aria-label="主导航">
+      <button class="nav active" data-tab="review"><span>01</span>场景与候选</button>
+      <button class="nav" data-tab="assets"><span>02</span>仪表清单</button>
+      <button class="nav" data-tab="plan"><span>03</span>巡检计划</button>
+      <button class="nav" data-tab="history"><span>04</span>记录与追溯</button>
+    </nav>
+    <div class="sidebar-bottom"><span class="dot"></span> 本地持久化存储<p id="connection">正在连接…</p><small>图像发现 → 人工确认 → 周期采集</small></div>
+  </aside>
+  <main>
+    <header class="topbar"><div><span class="eyebrow">SCENE REVIEW / 阶段一</span><h1 id="page-title">场景与候选</h1></div><div class="top-actions"><a class="button ghost" href="/api/export" download>导出清单</a><button id="refresh" class="ghost">刷新</button><button id="stop" class="stop">暂停巡检</button></div></header>
+    <div class="workflow"><span class="current">1　原始视图建档</span><i>→</i><span class="current">2　候选人工审核</span><i>→</i><span>3　云台回访标定</span><i>→</i><span>4　周期巡检</span></div>
+    <div id="toast" role="status" aria-live="polite" hidden></div>
+    <div class="mapbar"><label>当前场景 <select id="map-select" aria-label="选择场景"></select></label><span class="badge" id="map-status">尚无场景</span><span id="map-date" class="muted"></span></div>
+    <div id="empty" class="empty" hidden><h2>从原始图像开始建立仪表清单</h2><p>请先使用工程中的 import_review.py 导入图像与候选框。</p><p>导入后即可审核、补框、命名和保存巡检间隔。</p></div>
+    <section id="review-panel" class="panel">
+      <div id="stats" class="stats"></div>
+      <div class="review-layout">
+        <div class="scene-column">
+          <article id="overview-card" class="card" hidden>
+            <div class="card-title"><div><h2 id="overview-title">场景总览</h2><p id="overview-status"></p></div><span class="badge neutral">位置预览</span></div>
+            <div class="overview-viewport"><svg id="overview" role="img" aria-label="场景总览与候选位置"></svg></div>
+            <p class="footnote" id="overview-hint">点击候选回到高清来源图审核。未配准视图可在下方单独选择；总览不代表完整覆盖或云台回访已标定。</p>
+          </article>
+          <article class="card scene-card">
+            <div class="card-title"><div><h2>场景原图</h2><p id="image-description"></p></div><span class="badge neutral">原始视图索引</span></div>
+            <div class="scene-tools"><select id="frame-select" aria-label="选择原始视图"></select><button id="draw-add">＋ 手动补框</button><button id="draw-edit">修正选中框</button><button id="cancel-draw" hidden>取消框选</button><label class="check"><input id="show-rejected" type="checkbox">显示已排除</label><label class="check"><input id="panorama-only" type="checkbox" checked>全景检测与人工候选</label></div>
+            <div id="draw-hint" class="hint">点击候选框查看原图裁剪；人工确认后加入仪表清单。</div>
+            <div class="scene-viewport"><svg id="scene" role="img" aria-label="可点击和框选的场景原图"></svg></div>
+            <div class="image-footer"><span id="image-info"></span><a id="original" href="#" target="_blank" rel="noopener">打开原分辨率图像 ↗</a></div>
+          </article>
+          <article class="card detail-card"><h2>选中候选</h2><div id="selected-detail"></div></article>
+          <p class="footnote" id="provenance-note">当前展示历史现场图像及已有模型候选。裁剪预览来自同一张原图，不代表已完成云台放大采集或全景拼接。</p>
+        </div>
+        <aside class="card candidates-card"><div class="card-title"><div><h2>候选审核</h2><p>确认仪表，排除误检，补全遗漏</p></div><span id="candidate-count" class="count"></span></div><div id="candidates"></div></aside>
+      </div>
+    </section>
+    <section id="assets-panel" class="panel" hidden>
+      <article class="card"><div class="card-title"><div><h2>已确认的仪表</h2><p>编号长期保留。勾选代表计划采集；回访标定通过后才能执行。</p></div></div><div id="asset-list"></div></article>
+      <article class="card warning-card"><h2>平台位置发生变化</h2><p>平台移动后，历史云台角度不能用于新位置。将场景置为失效，保留历史记录，并重新建图和绑定仪表。</p><button id="invalidate" class="danger-outline">标记当前场景失效</button></article>
+    </section>
+    <section id="plan-panel" class="panel" hidden>
+      <div class="two-column">
+        <article class="card"><h2>周期巡检配置</h2><p>每轮结束后等待指定间隔再开始下一轮，同一时刻只执行一轮。</p><form id="schedule-form"><label class="field">巡检间隔（秒）<input id="interval" type="number" min="60" max="86400" step="1" value="300" required></label><div class="form-actions"><button class="primary" type="submit">保存间隔</button><button type="button" id="arm" disabled>启用周期巡检</button></div></form><div class="status-box" id="schedule-status"></div><p class="footnote">网页关闭不承担运动保活。后续由服务端执行巡检与停止保护；当前版本尚未接入实机采集适配器。</p></article>
+        <article class="card"><h2>采集路线预览</h2><p>仅使用人工确认并启用的仪表。先核对回访参考，再标定逐表居中位置。</p><div class="form-actions"><button id="reference-plan">检查回访准备</button><button id="route-plan">检查回访路线</button></div><div id="reference-result" class="status-box" hidden></div><div id="route-result" class="status-box">请先在仪表清单中确认需要采集的仪表。</div></article>
+      </div>
+      <article class="card"><div class="card-title"><div><h2>扫描布点规划</h2><p>生成往返行式视点网格。视场角需实测；本页只计算方案，不驱动相机。</p></div><span class="badge neutral">规划预览</span></div><form id="scan-form"><div class="scan-fields"><label>水平起点 °<input name="pan_min" type="number" min="0" max="350" value="180" step="0.1" required></label><label>水平终点 °<input name="pan_max" type="number" min="0" max="350" value="220" step="0.1" required></label><label>俯仰起点 °<input name="tilt_min" type="number" min="0" max="90" value="0" step="0.1" required></label><label>俯仰终点 °<input name="tilt_max" type="number" min="0" max="90" value="20" step="0.1" required></label><label>水平视场角 °<input name="hfov" type="number" min="1" max="120" value="40" step="0.1" required></label><label>垂直视场角 °<input name="vfov" type="number" min="1" max="100" value="25" step="0.1" required></label><label>重叠比例<input name="overlap" type="number" min="0.2" max="0.7" value="0.35" step="0.05" required></label><label>固定光学倍率<input name="zoom" type="number" min="1" max="2" value="1" step="0.1" required></label></div><button class="primary" type="submit">生成扫描网格</button></form><div id="scan-result"></div></article>
+    </section>
+    <section id="history-panel" class="panel" hidden><article class="card"><h2>巡检采集记录</h2><div id="jobs"></div></article><article class="card"><div class="card-title"><div><h2>审核操作记录</h2><p>最近 80 项操作；完整审计日志保存在本地数据库。</p></div></div><div id="audit"></div></article></section>
+  </main>
+</body>
+</html>

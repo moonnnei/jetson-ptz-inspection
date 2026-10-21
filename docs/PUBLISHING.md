@@ -1,6 +1,8 @@
 # 从干净发布目录发布到GitHub
 
-本指南对应v0.5.0-demo。源码、模型、许可证、文档、CI和模板已经准备好；创建GitHub仓库及推送由发布者执行。发布前确认你有权公开原创代码及项目资料，尤其是学校或合作项目的内容。当前没有代替你建立远程仓库或公开上传。
+仓库现已公开。更新当前工程时使用下方“后续更新”，保留已有提交与标签，不重复创建仓库或覆盖历史。main 包含场景审核开发版，v0.5.0-demo 是历史运动演示；上传源码不等于新的实机验收。新增文件必须通过显式公开清单和凭据/私有数据检查。
+
+本指南保留 v0.5.0-demo 的首次发布步骤，供新建自己的仓库时参考。已有仓库继续使用下方更新流程；公开文件范围、源码许可和模型来源说明保持随版本提供。
 
 ## 1 选择正确目录
 
@@ -114,13 +116,15 @@ GitHub会自动提供与标签提交对应的源码压缩包。额外附件可�
 ```powershell
 python scripts/update_manifest.py
 python scripts/test_local.py
+# 示例为只修改首页；按实际修改逐项列出已审核文件
+git add -- README.md FILE_MANIFEST.json
+git diff --cached --stat
 python scripts/check_release.py --verify-manifest
-git add .
 git commit -m "Describe the concrete change"
-git push
+git push origin main
 ```
 
-新增公开文件时先用`python scripts/update_manifest.py --add 路径`显式登记。源码改动、模拟测试、机械测试和发布整理分别描述，不沿用旧实验当作新验证。新版本使用新标签，保留历史失败和已发布版本。
+新增公开文件时先用`python scripts/update_manifest.py --add 路径`显式登记，并在最终清单审计前暂存已审核的新文件。源码改动、模拟测试、机械测试和发布整理分别描述，不沿用旧实验当作新验证。新版本使用新标签，保留历史失败和已发布版本。
 
 ## 常见问题
 

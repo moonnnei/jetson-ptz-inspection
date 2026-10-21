@@ -16,6 +16,7 @@ def main():
     subprocess.check_call([sys.executable,str(ROOT/'scripts/verify_models.py')])
     subprocess.check_call([sys.executable,'-m','unittest','discover','-s',str(ROOT/'src/person_tracker'),'-p','test_*.py','-v'])
     subprocess.check_call([sys.executable,'-m','unittest','discover','-s',str(ROOT/'src/inspection_demo'),'-p','test_*.py','-v'])
+    subprocess.check_call([sys.executable,'-m','unittest','discover','-s',str(ROOT/'src/inspection_console'),'-p','test_*.py','-v'])
     subprocess.check_call([sys.executable,'-m','unittest','discover','-s',str(ROOT/'scripts'),'-p','test_release.py','-v'])
     print('Local checks passed. No camera connected or moved.',flush=True)
 if __name__=='__main__':main()
