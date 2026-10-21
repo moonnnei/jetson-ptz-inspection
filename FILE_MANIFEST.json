@@ -32,8 +32,8 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 6456,
-      "sha256": "539742af334bba62fb9a7e0ceba163ba20a8ad97a874cb55099d52d81aca7010"
+      "bytes": 6957,
+      "sha256": "fdb10277d0f4e30a4d7acb71c3499f25c3aabab802798c5af2d486e6820d0f13"
     },
     {
       "path": "CHECKS.md",
@@ -57,13 +57,13 @@
     },
     {
       "path": "README.en.md",
-      "bytes": 8064,
-      "sha256": "49cfa9905f1712f53a45682ad20e1fc5b5fad3850324692ea8ea9d9273b58315"
+      "bytes": 8128,
+      "sha256": "34698810fa4083ac1acc0cc734c522870ae3b9ad1573144348592c40bd49adca"
     },
     {
       "path": "README.md",
-      "bytes": 8651,
-      "sha256": "501446c5a66273b1a223ec145a9cee8ead41e629acb52a167ecbff1c44c01607"
+      "bytes": 8706,
+      "sha256": "f2072ef849983ff79fe2ad401d18bc9d4a85d4349b615e02b6f4137007988bf5"
     },
     {
       "path": "SECURITY.md",
@@ -117,8 +117,8 @@
     },
     {
       "path": "docs/DEPLOYMENT.md",
-      "bytes": 5827,
-      "sha256": "0f57b5d43259b0d404ebded8e43bc59aae0933e35269125a3d2989c73783cf46"
+      "bytes": 6054,
+      "sha256": "2dbb5982ccc71712aa0d805a2fc245986eb4fe18ace0e3cb6264e1c10eafece7"
     },
     {
       "path": "docs/FOLLOW_2026-10-14.md",
@@ -167,8 +167,8 @@
     },
     {
       "path": "docs/README.md",
-      "bytes": 4630,
-      "sha256": "f2f882a5443da8ab3b63317a58cfaaa1af911b5e27448a167c0890369e8d6bad"
+      "bytes": 4879,
+      "sha256": "a04d3c42d7ca260a603f672df42468e54c54acf5cb7f0059f969d5004cb3b70a"
     },
     {
       "path": "docs/RELEASE_NOTES_v0.5.0-demo.md",
@@ -214,6 +214,11 @@
       "path": "docs/TRACKING_PRIORITY_2026-10-13.md",
       "bytes": 10339,
       "sha256": "1498fa20092b56078fd5590020b3c63ec60ec3dfe931e4f8bc9ab19911bb2220"
+    },
+    {
+      "path": "docs/TX2_YOLO_PTZ_TUTORIAL.md",
+      "bytes": 16766,
+      "sha256": "e8501bee830f22bbf02c5122eecc195c14d16fdd6c3b318dc5f3200049d57725"
     },
     {
       "path": "docs/VALIDATION.md",
@@ -911,5 +916,11 @@
       39
     ],
     "note": "Main source update; v0.5.0-demo tag and historical validation metadata retained."
+  },
+  "documentation_update": {
+    "date": "2026-10-21",
+    "tutorial_code_baseline": "343d371eca50fe66a3a4acc7dbb2c56744920582",
+    "runtime_code_changed": false,
+    "new_hardware_motion": false
   }
 }

@@ -1,5 +1,7 @@
 # 部署与运行手册
 
+第一次接触本工程，可先阅读[Jetson TX2 部署与云台联调实战](TX2_YOLO_PTZ_TUTORIAL.md)，按固定代码版本完成环境记录、单图验证和设备接口联调，再使用本手册查询运行细节。
+
 ## 1 确认目标设备
 
 读取 `/etc/os-release`、`/etc/nv_tegra_release`，记录 `python3 --version`、`cmake --version`、`g++ --version`。本工程针对原 TX2 Ubuntu16.04/Python3.5/OpenCV3.3.1 基线；没有进行系统升级。不要为项目直接替换 `/usr/bin/python`。

@@ -4,7 +4,7 @@
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
 [![Published demo](https://img.shields.io/badge/demo-v0.5.0-orange.svg)](https://github.com/moonnnei/jetson-ptz-inspection/releases/tag/v0.5.0-demo)
 
-[中文](README.md) · [Documentation](docs/README.md) · [Architecture](docs/ARCHITECTURE.md) · [Review console](docs/REVIEW_CONSOLE.md) · [Deployment](docs/DEPLOYMENT.md) · [Roadmap](docs/ROADMAP.md)
+[中文](README.md) · [Documentation](docs/README.md) · [Hands-on tutorial (Chinese)](docs/TX2_YOLO_PTZ_TUTORIAL.md) · [Architecture](docs/ARCHITECTURE.md) · [Review console](docs/REVIEW_CONSOLE.md) · [Deployment](docs/DEPLOYMENT.md) · [Roadmap](docs/ROADMAP.md)
 
 An experimental inspection system for a Jetson TX2 and a Hikvision DS-2DC2402IW-DE3 S6 PTZ camera. It combines RTSP acquisition, bounded camera motion, object detection, panorama previews, human review and persistent instrument records.
 

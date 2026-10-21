@@ -8,7 +8,7 @@
 
 1. 阅读[项目方案](项目方案.md)，了解最终仪表应用与现有原型的关系。
 2. 阅读[巡检设计与操作](INSPECTION_DEMO.md)，了解扫描、去重、访问规划、居中和变焦流程。
-3. 按[部署手册](DEPLOYMENT.md)核对旧系统依赖、编译模型后端和准备本地配置。
+3. 按[部署实战文章](TX2_YOLO_PTZ_TUTORIAL.md)分步复现环境记录、NCNN 构建、单图推理、RTSP 和 ISAPI 联调；[部署手册](DEPLOYMENT.md)提供运行参数与排错细节。
 4. 对照[接口与坐标约定](INSPECTION_DEMO_INTERFACES.md)查看帧、位置、状态和导出字段。
 5. 阅读[最新公开实机复验](INSPECTION_DEMO_VALIDATION_2026-10-15.md)和[路线图](ROADMAP.md)，区分已有证据与待验收能力。
 
@@ -16,6 +16,7 @@
 
 | 文档 | 内容 |
 | --- | --- |
+| [TX2 部署与云台联调实战](TX2_YOLO_PTZ_TUTORIAL.md) | 固定代码版本、NCNN CPU 推理、RTSP 硬解、ISAPI 测试与局部视觉居中 |
 | [项目方案](项目方案.md) | 硬件、软件、链路与阶段目标 |
 | [系统架构](ARCHITECTURE.md) | PC/TX2 分工、来源/搜索/采集位置、图像坐标和状态一致性 |
 | [场景审核控制台](REVIEW_CONSOLE.md) | 新流程第一阶段：原图与候选审核、仪表档案、巡检配置；默认不控制相机 |

@@ -4,7 +4,7 @@
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
 [![已发布演示](https://img.shields.io/badge/demo-v0.5.0-orange.svg)](https://github.com/moonnnei/jetson-ptz-inspection/releases/tag/v0.5.0-demo)
 
-[English](README.en.md) · [文档](docs/README.md) · [系统架构](docs/ARCHITECTURE.md) · [审核控制台](docs/REVIEW_CONSOLE.md) · [部署](docs/DEPLOYMENT.md) · [路线图](docs/ROADMAP.md)
+[English](README.en.md) · [文档](docs/README.md) · [部署实战文章](docs/TX2_YOLO_PTZ_TUTORIAL.md) · [系统架构](docs/ARCHITECTURE.md) · [审核控制台](docs/REVIEW_CONSOLE.md) · [部署](docs/DEPLOYMENT.md) · [路线图](docs/ROADMAP.md)
 
 面向分散仪表的 Jetson TX2 云台视觉巡检实验工程。相机提供 RTSP 视频和 ISAPI 云台控制，系统组合目标检测、扫描采集、全景总览、人工复审、仪表建档及视觉居中等模块。
 
