@@ -32,13 +32,13 @@
     },
     {
       "path": "CHANGELOG.md",
-      "bytes": 12930,
-      "sha256": "8c68ab18eee7d92202c188239067bf92580b9a2d3f6b998e2bc691c4dc7d3450"
+      "bytes": 13110,
+      "sha256": "fb9e407c8766ac115aec249735d78ae882ac6432c3df8bc90c474fd446a9a56c"
     },
     {
       "path": "CHECKS.md",
-      "bytes": 27032,
-      "sha256": "965b3bf04e10fd4d80819cfd068640884b7f38abd7b29f2e1e0193b5655637fb"
+      "bytes": 27533,
+      "sha256": "665221de2793a95746ca86b56833a60c618e953928d083fa89e702f2a280f0ff"
     },
     {
       "path": "CMakeLists.txt",
@@ -937,8 +937,8 @@
     },
     {
       "path": "src/inspection_console/test_persistent_detector.py",
-      "bytes": 2415,
-      "sha256": "aa254785634b16447ba7a838dde5de8c59792ba4119d4515a5467bb6abf64cae"
+      "bytes": 2439,
+      "sha256": "017b2a13a2a029008a0b7663cfe7a414b79c9cf409e808109103f79358b61698"
     },
     {
       "path": "src/inspection_console/test_preset_patrol.py",

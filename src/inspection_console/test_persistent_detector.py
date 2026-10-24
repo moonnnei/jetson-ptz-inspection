@@ -20,7 +20,7 @@ class PersistentDetectorTests(unittest.TestCase):
             part=bytes(buffer[:min(size,3)]);del buffer[:len(part)];return part
         def ready(readers,writers,errors,timeout):return (readers,writers,[])
         with patch('region_detector.subprocess.Popen',return_value=self.process) as start, \
-             patch('region_detector.os.set_blocking'),patch('region_detector.select.select',side_effect=ready), \
+             patch('region_detector.os.set_blocking',create=True),patch('region_detector.select.select',side_effect=ready), \
              patch('region_detector.os.write',side_effect=lambda fd,data:len(data)),patch('region_detector.os.read',side_effect=read):
             with self.detector.session():
                 a=self.detector.predict(self.fixture.roi);b=self.detector.predict(self.fixture.roi)
@@ -29,7 +29,7 @@ class PersistentDetectorTests(unittest.TestCase):
 
     def test_backpressure_failure_kills_worker_and_is_not_retried(self):
         with patch('region_detector.subprocess.Popen',return_value=self.process) as start, \
-             patch('region_detector.os.set_blocking'),patch('region_detector.select.select',return_value=([],[],[])):
+             patch('region_detector.os.set_blocking',create=True),patch('region_detector.select.select',return_value=([],[],[])):
             with self.detector.session():
                 with self.assertRaises(RuntimeError):self.detector.predict(self.fixture.roi)
             self.assertEqual(start.call_count,1)
