@@ -1,0 +1,16 @@
+cmake_minimum_required(VERSION 3.5)
+project(meter_deployment CXX)
+set(CMAKE_CXX_STANDARD 11)
+find_package(OpenCV REQUIRED)
+find_package(Threads REQUIRED)
+find_package(OpenMP REQUIRED)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 ${OpenMP_CXX_FLAGS}")
+set(NCNN_ROOT "" CACHE PATH "Existing directory containing ncnn-master and ncnn-build")
+if(NOT EXISTS "${NCNN_ROOT}/ncnn-build/src/libncnn.a")
+  message(FATAL_ERROR "Set NCNN_ROOT to an existing compatible NCNN source/build directory")
+endif()
+add_executable(meter_detector meter_detector.cpp)
+target_include_directories(meter_detector PRIVATE ${OpenCV_INCLUDE_DIRS}
+  ${NCNN_ROOT}/ncnn-master/src ${NCNN_ROOT}/ncnn-build/src)
+target_link_libraries(meter_detector ${NCNN_ROOT}/ncnn-build/src/libncnn.a
+  ${OpenCV_LIBS} ${CMAKE_THREAD_LIBS_INIT})

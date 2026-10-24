@@ -1,0 +1,34 @@
+body:not(.advanced-mode) .sidebar,body:not(.advanced-mode) .workflow,body:not(.advanced-mode) #stats,body:not(.advanced-mode) #source-details,body:not(.advanced-mode) .eyebrow,body:not(.advanced-mode) #refresh{display:none}
+body:not(.advanced-mode) main{margin-left:0;max-width:1640px;margin-right:auto;margin-left:auto;padding:22px 30px}
+body:not(.advanced-mode) #page-title{font-size:26px}
+.scene-archive{padding:16px;background:#f1f7fc;border:1px solid #c9ddeb;border-radius:9px;flex-wrap:wrap;gap:12px}.scene-archive label{display:flex;gap:10px;align-items:center;font-weight:600}.scene-archive select{width:min(500px,65vw);max-width:100%;min-width:0}.scene-archive-note{flex-basis:100%;margin:0;font-size:12px;line-height:1.8;color:#4a677d}#results-history-scene{max-width:min(420px,75vw)}
+body:not(.advanced-mode) .topbar{margin-bottom:16px}
+.live-control-layout{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:18px;padding-top:12px}
+.ptz-panel{border:1px solid #dde4ed;border-radius:12px;padding:16px;background:#f8fafc}
+.ptz-panel h3{margin:0 0 12px}.ptz-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;max-width:210px;margin:12px auto}.ptz-pad button{min-height:40px;font-size:19px}.ptz-pad .stop{font-size:13px}
+.zoom-buttons{display:flex;gap:8px;margin:12px 0}.zoom-buttons button{flex:1}.ptz-panel .check{white-space:normal}.ptz-panel select{margin-left:5px}
+#camera-status{font-size:12px;line-height:1.7;color:#54657d}#camera-pose{font-size:12px;font-variant-numeric:tabular-nums;line-height:1.8;color:#34465f}
+#live-image{cursor:crosshair}.scan-range-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:14px 0}.scan-range-row small{color:#66788e;font-variant-numeric:tabular-nums}
+.range-result{padding:12px;border-radius:8px;background:#f2f6fb;color:#3f536b;font-size:13px}.workbench-steps{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 18px}.workbench-steps span{padding:7px 12px;background:#eef3fa;border-radius:7px;font-size:13px;color:#41566f}
+body:not(.advanced-mode) .overview-workspace{grid-template-columns:minmax(0,1fr) 330px}body:not(.advanced-mode) .overview-viewport{min-height:360px;height:440px}
+.workbench-candidate-list{max-height:380px;overflow:auto;margin-top:12px}.workbench-candidate{display:grid;grid-template-columns:22px 84px minmax(0,1fr);align-items:center;gap:9px;padding:10px 5px;border-bottom:1px solid #e4eaf2}.workbench-candidate.selected{background:#eaf1ff}.workbench-candidate input{width:17px;height:17px}.workbench-candidate small{display:block;color:#65758b;font-size:12px;line-height:1.6}.candidate-picture{padding:0;overflow:hidden;height:61px;border-radius:5px}.candidate-picture svg{width:82px;height:59px;display:block}.workbench-candidate strong{font-size:13px}
+body:not(.advanced-mode) #overview-inspector{display:none}body:not(.advanced-mode) #overview-confirm,body:not(.advanced-mode) #overview-pending{display:none}body:not(.advanced-mode) .overview-toolbar label:has(#overview-pending){display:none}
+.candidate-picture canvas{width:82px;height:59px;display:block}
+#commission-reviewed{width:100%;margin-top:12px}#quick-patrol>article{margin-top:18px}#quick-patrol form{display:flex;align-items:flex-end;flex-wrap:wrap;gap:14px}#quick-patrol .field{max-width:220px}#quick-patrol .form-actions{margin-top:0}
+body:not(.advanced-mode) #overview,body:not(.advanced-mode) #overview-mode-hint,body:not(.advanced-mode) .legacy-overview-toolbar,body:not(.advanced-mode) .overview-review-actions{display:none}
+#panorama-viewer{position:absolute;inset:0;background:#102332;touch-action:none}
+.panorama-draw-layer{position:absolute;inset:0;z-index:11;cursor:crosshair;touch-action:none;user-select:none;background:transparent}
+.panorama-draw-preview{position:absolute;pointer-events:none;outline:2px solid #72dcff;box-shadow:0 0 0 1px #102332;background:#72dcff33}
+.panorama-target{outline:2px solid #37c994;box-shadow:0 0 0 1px #102332;pointer-events:none!important;box-sizing:border-box;overflow:visible!important}
+.panorama-target-label{position:absolute;top:0;left:0;transform:translateY(-100%);white-space:nowrap;line-height:1.5;font:600 12px/1.5 system-ui,sans-serif;padding:1px 5px;background:#13704e;color:#fff;border-radius:3px 3px 0 0;pointer-events:none}
+.panorama-target.batch-selected{outline-color:#66c9ff}.panorama-target.batch-selected .panorama-target-label{background:#155d89}
+.panorama-target.focused{outline:4px solid #ffad33;box-shadow:0 0 0 2px #fff,0 0 0 5px #10233277;z-index:3;background:#ffad331c}.panorama-target.focused .panorama-target-label{background:#9c5100;color:#fff}
+.workbench-candidate.focused{background:#fff3df;box-shadow:inset 3px 0 #ed9630}.candidate-locate{padding:0;border:0;background:transparent;font-size:13px;font-weight:650;text-align:left;color:#195a83;cursor:pointer}
+.scene-focus-detail{padding:10px;background:#fff4e2;border:1px solid #edbe74;border-radius:6px;margin:10px 0}.scene-focus-detail strong{display:block;color:#824a08;font-size:13px}.scene-focus-detail canvas{width:100%;height:115px;object-fit:contain;margin:7px 0}.scene-focus-detail small{display:block;font-size:11px;line-height:1.6;color:#735d40}
+.panorama-mode{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:#102332dd;color:#e4f2ff;border-radius:6px;padding:6px 12px;pointer-events:none;font-size:12px;z-index:12;white-space:nowrap}
+.advanced-mode #panorama-viewer,.advanced-mode #panorama-tools,.advanced-mode #scene-mode,.advanced-mode #scene-draw-layer,.advanced-mode #scene-focus-detail{display:none}
+.overview-viewport{position:relative}.scan-progress{display:flex;align-items:center;gap:14px;margin:12px 0;font-size:13px;flex-wrap:wrap}.scan-progress progress{width:min(420px,100%);height:18px;accent-color:#19876b}.scan-progress span{color:#63768a}
+.row-exclude{font-size:12px;padding:4px 10px;margin-top:5px;color:#a43b32;border-color:#edd6d3}
+#panorama-tools button[aria-pressed=true]{color:#125c98;background:#e4f1ff;border-color:#6cabe0}#scene-selection{font-size:12px;color:#63768a}
+body:not(.advanced-mode) .overview-workspace{grid-template-columns:minmax(0,1fr) 330px}
+@media(max-width:900px){body:not(.advanced-mode) main{padding:15px}.live-control-layout{grid-template-columns:1fr}.ptz-panel{display:flex;flex-wrap:wrap;gap:12px;align-items:center}.ptz-pad{margin:0;min-width:160px}.ptz-panel h3{width:100%}body:not(.advanced-mode) .overview-workspace{grid-template-columns:1fr}.workbench-candidate-list{max-height:260px}}

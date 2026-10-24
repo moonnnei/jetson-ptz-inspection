@@ -3,6 +3,7 @@
 This is image registration, never a PTZ calibration or a coverage certificate.
 Detection coordinates must remain in each full-resolution source image.
 """
+from __future__ import division
 import cv2
 import numpy as np
 
@@ -37,7 +38,9 @@ def prepare(image):
     return keys, descriptors, np.diag([work.shape[1]/width, work.shape[0]/height, 1.]), work.shape[:2]
 
 
-def align(source, target, source_features=None, target_features=None):
+def align(source, target, source_features=None, target_features=None, area_limits=(.4,2.5)):
+    if len(area_limits)!=2 or not 0<area_limits[0]<=area_limits[1]<=10:
+        raise ValueError('invalid registration area bounds')
     sk, sd, ss, sw = source_features or prepare(source)
     tk, td, ts, tw = target_features or prepare(target)
     result = dict(accepted=False, matches=0, inliers=0)
@@ -83,7 +86,7 @@ def align(source, target, source_features=None, target_features=None):
                       target_feature_coverage=cover_b, area_ratio=area/source_area,
                       overlap_fraction=float(overlap/max(1, area)))
         if (median > 2.5 or min(cover_a, cover_b) < .025
-                or not cv2.isContourConvex(quad) or not .4 <= area/source_area <= 2.5
+                or not cv2.isContourConvex(quad) or not area_limits[0] <= area/source_area <= area_limits[1]
                 or overlap/max(1, area) < .1 or np.max(np.abs(quad)) > 100000):
             result['reason'] = 'geometry_quality_rejected'
             return result

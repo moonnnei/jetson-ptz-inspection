@@ -65,6 +65,17 @@ class ReleaseGuardTests(unittest.TestCase):
             self.assertTrue(any('Credentials in example URL' in e for e in errors))
             self.assertTrue(any('Broken local Markdown link' in e for e in errors))
 
+    def test_console_schema_checks_username_and_origin_credentials(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory);self.make_tree(root)
+            path=root/'config/console.example.json'
+            path.write_text(json.dumps(dict(camera_user='YOUR_CAMERA_USER',camera_origin='http://192.0.2.1')),encoding='utf8')
+            self.assertEqual(audit(root),[])
+            path.write_text(json.dumps(dict(camera_user='actual-user',camera_origin='http://user:example@192.0.2.1')),encoding='utf8')
+            errors=audit(root)
+            self.assertTrue(any('username is not a placeholder' in e for e in errors))
+            self.assertTrue(any('Credentials in example URL' in e for e in errors))
+
 
 if __name__ == '__main__':
     unittest.main()

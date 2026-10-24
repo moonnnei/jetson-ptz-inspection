@@ -2,18 +2,23 @@
 
 [项目首页](../README.md) · [部署](../docs/DEPLOYMENT.md) · [巡检接口](../docs/INSPECTION_DEMO_INTERFACES.md)
 
-当前入口包括场景审核控制台和人体替代仪表的运动 Demo。前者建立真实仪表清单与回访参考，默认不控制硬件；后者保留“发现—定位—居中—放大—留图”的实机演示。PC 建图工具见 [scene_mapping](../tools/scene_mapping/README.md)，模块边界见[系统架构](../docs/ARCHITECTURE.md)。
+当前主线为真实仪表自动建档与软件预置位巡检，默认服务仍不连接硬件；显式适配器执行有限采集。历史人体 Demo 单独保留。主线方法和实测见[自动建档](../docs/AUTOMATIC_REGISTRATION.md)及[预置位巡检](../docs/SOFTWARE_PRESET_PATROL.md)。PC 建图工具见 [scene_mapping](../tools/scene_mapping/README.md)，模块边界见[系统架构](../docs/ARCHITECTURE.md)。
 
 ## 模块分工
 
 | 目录 | 主要职责 | 入口与关键文件 |
 | --- | --- | --- |
-| `inspection_console/` | 独立场景审核、仪表档案、网格规划及尚未接入实机的调度器 | [server.py](inspection_console/server.py)、[store.py](inspection_console/store.py)、[planner.py](inspection_console/planner.py)、[scheduler.py](inspection_console/scheduler.py)、[操作说明](../docs/REVIEW_CONSOLE.md) |
+| `inspection_console/` | 场景档案、建档队列、软件预置位、最近邻路线和单轮/周期调度 | [server.py](inspection_console/server.py)、[store.py](inspection_console/store.py)、[planner.py](inspection_console/planner.py)、[scheduler.py](inspection_console/scheduler.py)、[操作说明](../docs/REVIEW_CONSOLE.md) |
+| `meter_runtime/` | 单类 YOLO11n NCNN CPU FP32 推理 | [meter_detector.cpp](meter_runtime/meter_detector.cpp)、[CMakeLists.txt](meter_runtime/CMakeLists.txt) |
 | `inspection_demo/` | 网页服务、任务状态机、设备适配与同帧留图 | [demo_server.py](inspection_demo/demo_server.py)、[controller.py](inspection_demo/controller.py)、[real_io.py](inspection_demo/real_io.py)、[evidence_worker.py](inspection_demo/evidence_worker.py) |
 | `person_tracker/` | 共享RTSP采集、C++检测器、ISAPI控制，以及独立人员跟随服务 | [server.py](person_tracker/server.py)、[rtsp_capture.py](person_tracker/rtsp_capture.py)、[rtsp_worker.py](person_tracker/rtsp_worker.py)、[detector.cpp](person_tracker/detector.cpp)、[ptz_control.py](person_tracker/ptz_control.py) |
 | `image_infer/` | 使用转换模型进行通用物体单图推理 | [infer.cpp](image_infer/infer.cpp) |
 
-## 巡检调用关系
+## 真实仪表主线
+
+`server.py` → `AnnotationService` → `AnnotatedCapture` / 图像子进程，完成首次新图和独立回访；`ClassifiedAnnotationIO` 复用原生 NCNN 语义检查；`registry_annotations.py` 保存来源、去重与预置位。`SoftwarePresetAdapter` 供 `Scheduler.run_once` 或固定延迟周期调用。`--software-patrol --auto-annotations` 显式启用后才连接设备。
+
+## 历史人体巡检调用关系
 
 ```mermaid
 flowchart TD

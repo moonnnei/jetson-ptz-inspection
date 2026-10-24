@@ -17,7 +17,19 @@
 | 导出处理 | 保留one-to-one网络，将末端TopK/Gather移至主机 |
 | 详细依据 | [MODEL_CARD.md](yolo26n/MODEL_CARD.md)、[export-info.json](yolo26n/export-info.json) |
 
-当前模型不检测仪表类别，也不输出仪表数值。输入输出布局经过工程适配，不能只按文件扩展名套用其他YOLO或NCNN示例的解码逻辑。
+这里随附的 YOLO26n 不检测仪表类别，也不输出仪表数值。当前真实仪表主线另用本地训练的单类 YOLO11n，权重未随仓库提供。输入输出布局经过工程适配，不能只按文件扩展名套用其他 YOLO 或 NCNN 示例的解码逻辑。
+
+## 当前仪表模型接口（权重自备）
+
+本次冻结的模型接口与检查点／NCNN文件哈希见[仪表模型卡](meter/MODEL_CARD.md)。这些文件已进入私有恢复档案，公开工程不分发仪表权重。
+
+- 类别 `{0: "meter"}`，YOLO11n Detect，固定 batch 1、640 输入、FP32。
+- 原框架输出 `1×5×8400`，原生 NCNN 检测器按其转换张量解析；不能直接换用 YOLO26n 的解码器。
+- 预处理为 RGB、除 255、等比缩放和居中补边 114；置信度 0.25、NMS IoU 0.45。
+- 源码：[meter_detector.cpp](../src/meter_runtime/meter_detector.cpp)；电脑导出：[export_meter.py](../tools/model_export/export_meter.py)；可信检查点加载：[meter_checkpoint.py](../tools/model_export/meter_checkpoint.py)。
+- 先验证本地检查点来源及哈希；当前保留已运行的转换模型，冻结时不重新导出。CMake独立入口已在此前TX2阶段构建并对照非空ROI输出，见[初始化复验](../docs/INITIALIZATION_VALIDATION_2026-10-24.md)；该编译记录与本次发布离线检查分别保存。
+
+运行目录和构建方式见[预置位巡检部署](../docs/SOFTWARE_PRESET_PATROL.md)。普通目标检测不等于指针/刻度解析或仪表读数。
 
 ## 文件用途
 

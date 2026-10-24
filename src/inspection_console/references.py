@@ -30,7 +30,8 @@ def reference_plan(state, map_id, revision):
         if asset['map_id'] != map_id or not asset['enabled']:
             continue
         candidate = Store.find(state, 'candidates', asset['candidate_id'])
-        if (candidate['map_id'] != map_id or candidate['state'] != 'confirmed'
+        if (candidate['map_id'] != map_id or candidate['state'] not in
+                ('confirmed','human_labeled','automatic_proposal','auto_verified')
                 or candidate['instrument_id'] != asset['id']):
             raise ValueError('enabled instrument is not bound to a confirmed candidate')
         observations = [candidate] + sorted(
@@ -50,7 +51,10 @@ def reference_plan(state, map_id, revision):
                 bbox=bbox(observed['bbox'], frame['width'], frame['height']),
                 orientation=frame['orientation'], source_kind=frame['source_kind'],
                 captured_at=frame.get('captured_at'), source_pose=source_pose,
-                selection='confirmed' if observed is candidate else 'human_merged'))
+                selection=({'human_labeled':'human_missed_target_box',
+                            'automatic_proposal':'automatic_unverified_proposal',
+                            'auto_verified':'automatically_verified'}.get(candidate['state'],'confirmed')
+                           if observed is candidate else 'human_merged')))
         primary = references[0]
         blockers = ['image_motion_calibration_required', 'fresh_target_check_required',
                     'bounded_hardware_acceptance_required']

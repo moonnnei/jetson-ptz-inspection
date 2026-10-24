@@ -22,6 +22,7 @@ python -m unittest discover -s tools/scene_mapping -p 'test_*.py' -v
 | `detect_views.py` | 高清来源图和局部候选上的仪表检测 |
 | `detect_panorama.py` | 全景整体/重叠分块检测、跨接缝合并、来源外观核对与复检 |
 | `check_revisit.py` | 已确认仪表的参考图复核与拒绝检查，不执行运动 |
+| `fixed_revisit.py` | 恢复原拍摄姿态后的局部配准及邻近竞争匹配检查，供有限回访图像进程调用；不执行运动 |
 | `shape_candidates.py` | 非学习形状候选，供实验比较，不能保证是表盘 |
 
 ## 原图到审核清单

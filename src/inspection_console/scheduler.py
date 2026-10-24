@@ -53,7 +53,7 @@ class Scheduler:
             raise ValueError('there are no enabled confirmed instruments')
         for asset in targets:
             candidate = self.store.find(state, 'candidates', asset['candidate_id'])
-            if candidate['state'] != 'confirmed' or asset['pose_status'] != 'verified' or not asset['visit_pose']:
+            if candidate['state'] not in ('confirmed','human_labeled','auto_verified') or asset['pose_status'] != 'verified' or not asset['visit_pose']:
                 raise ValueError('all enabled instruments need verified visit poses')
         return targets
 
@@ -62,11 +62,46 @@ class Scheduler:
             if not self.adapter.ready() or self.stop_error or self.stopping:
                 raise ValueError('hardware adapter is not commissioned; schedule remains paused')
             def apply(state):
+                if state['schedule']['enabled']:raise Conflict('pause the current batch before arming another')
                 self._targets(state, state['schedule']['map_id'])
                 if any(j['status'] == 'running' for j in state['jobs']):
                     raise Conflict('inspection is already active')
-                state['schedule'].update(enabled=True, state='armed', next_due_at=self.clock())
+                limit=state['schedule'].get('round_limit')
+                if limit is not None and (type(limit) is not int or not 1<=limit<=1000):
+                    raise ValueError('invalid saved round limit')
+                state['schedule'].update(enabled=True, state='armed', next_due_at=self.clock(),
+                    batch_id=identifier('batch'),completed_rounds=0,attempted_rounds=0,armed_at=now())
             return self.store.change(revision, 'schedule_arm', {}, apply)
+
+    def run_once(self,revision,map_id):
+        """One bounded patrol, without implicitly enabling a recurring timer."""
+        with self.lock:
+            if (not self.adapter.ready() or self.stop_error or self.stopping
+                    or self.worker is not None and self.worker.is_alive()):
+                raise ValueError('hardware unavailable or an inspection is active')
+            state=self.store.snapshot()
+            if state['revision']!=revision:raise Conflict('registry revision changed')
+            if state['schedule']['enabled']:raise ValueError('pause periodic capture before a one-shot run')
+            targets=self._targets(state,map_id)
+            plan=route(targets,self.adapter.position())
+            if plan['blocked']:raise ValueError('route contains unverified poses')
+            by_id={a['id']:a for a in targets}
+            targets=[by_id[item['id']] for item in plan['stops']]
+            key=identifier('job')
+            def start(s):
+                self._targets(s,map_id)
+                if any(j['status']=='running' for j in s['jobs']):raise Conflict('inspection is active')
+                s['jobs'].append(dict(id=key,map_id=map_id,status='running',mode=self.adapter.mode,
+                    started_at=now(),results=[],route=[a['id'] for a in targets],error=None,
+                    execution='single_round_no_periodic_timer'))
+                s['jobs']=s['jobs'][-80:]
+                s['schedule'].update(enabled=False,state='running_once',next_due_at=None)
+            self.store.change(revision,'inspection_start_once',dict(id=key,map_id=map_id),start)
+            self.cancel=threading.Event();self.active_id=key
+            self.deadline=self.monotonic()+(self.adapter.round_budget(len(targets)) if hasattr(self.adapter,'round_budget') else 180)
+            self.worker=threading.Thread(target=self._run,args=(key,targets,self.cancel),name='registry-inspection-once')
+            self.worker.daemon=True;self.worker.start()
+            return dict(started=True,job_id=key,periodic_enabled=False)
 
     def stop(self, revision=None):
         with self.lock:
@@ -105,7 +140,12 @@ class Scheduler:
                 return
             state = self.store.snapshot()
             schedule = state['schedule']
+            if (state.get('initialization') or {}).get('status') in ('scanning','detecting','mapping','importing','commissioning'):
+                return
             if not schedule['enabled'] or schedule['next_due_at'] is None or self.clock() < schedule['next_due_at']:
+                return
+            if schedule.get('round_limit') is not None and schedule.get('completed_rounds',0)>=schedule['round_limit']:
+                self.store.change(None,'schedule_batch_complete',{},lambda s:self.store.pause(s,'batch_completed'))
                 return
             if not self.adapter.ready() or self.stop_error or self.stopping:
                 self.store.change(None, 'schedule_blocked', {},
@@ -125,9 +165,13 @@ class Scheduler:
                         raise Conflict('inspection already running')
                     s['jobs'].append(dict(id=key, map_id=schedule['map_id'], status='running',
                         mode=self.adapter.mode, started_at=now(), results=[],
-                        route=[a['id'] for a in targets], error=None))
+                        route=[a['id'] for a in targets], error=None,
+                        schedule_batch_id=schedule.get('batch_id'),
+                        schedule_round_index=schedule.get('attempted_rounds',0)+1,
+                        schedule_round_limit=schedule.get('round_limit')))
                     s['jobs'] = s['jobs'][-80:]
-                    s['schedule'].update(state='running', next_due_at=None)
+                    s['schedule'].update(state='running', next_due_at=None,
+                        attempted_rounds=schedule.get('attempted_rounds',0)+1)
                 self.store.change(state['revision'], 'inspection_start', dict(id=key), start)
             except (ValueError, Conflict):
                 self.store.change(None, 'schedule_blocked', {},
@@ -136,7 +180,7 @@ class Scheduler:
             self.cancel = threading.Event()
             self.active_id = key
             # Hard round budget; an adapter must also bound each operation.
-            self.deadline = self.monotonic() + 180
+            self.deadline = self.monotonic() + (self.adapter.round_budget(len(targets)) if hasattr(self.adapter,'round_budget') else 180)
             self.worker = threading.Thread(target=self._run, args=(key, targets, self.cancel),
                                            name='registry-inspection')
             self.worker.daemon = True
@@ -144,15 +188,28 @@ class Scheduler:
 
     def _run(self, key, targets, cancel):
         result_state, error = 'completed', None
+        started=self.monotonic()
         try:
-            for asset in targets:
+            by_id={a['id']:a for a in targets}
+            seen=set()
+            if hasattr(self.adapter,'run_round'):
+                results=self.adapter.run_round(key,targets,cancel)
+            else:
+                def legacy_results():
+                    for asset in targets:
+                        if cancel.is_set():break
+                        yield self.adapter.visit(asset,cancel)
+                results=legacy_results()
+            for result in results:
                 if cancel.is_set():
                     result_state = 'stopped'
                     break
-                result = self.adapter.visit(asset, cancel)
                 # A new adapter cannot silently present cached photos as current.
-                if not isinstance(result, dict) or result.get('instrument_id') != asset['id']:
+                if (not isinstance(result,dict) or result.get('instrument_id') not in by_id
+                        or result['instrument_id'] in seen):
                     raise ValueError('invalid capture result')
+                asset=by_id[result['instrument_id']]
+                seen.add(asset['id'])
                 if result.get('status') not in ('captured', 'not_found', 'uncertain', 'failed'):
                     raise ValueError('capture status is missing')
                 if result['status'] == 'captured' and not all(result.get(k) for k in ('capture_id', 'captured_at', 'image_sha256', 'image')):
@@ -166,8 +223,13 @@ class Scheduler:
                     result_state = 'completed_with_errors'
             if cancel.is_set():
                 result_state = 'stopped'
+            elif seen!=set(by_id):
+                raise ValueError('inspection omitted targets')
         except Exception as exc:
-            result_state, error = 'failed', type(exc).__name__
+            # A real round adapter reports a cancelled finite capture by
+            # raising after STOP. Keep that distinct from an uncancelled fault;
+            # any unconfirmed STOP below still overrides this as failed.
+            result_state,error=('stopped',None) if cancel.is_set() else ('failed',type(exc).__name__)
         finally:
             with self.lock:
                 self.stopping += 1
@@ -177,13 +239,29 @@ class Scheduler:
                 result_state, error = 'failed', 'STOP_unconfirmed'
                 with self.lock:
                     self.stop_error = 'STOP unconfirmed'
+            detail={}
+            try:
+                if hasattr(self.adapter,'summary'):detail=self.adapter.summary(key) or {}
+                if not isinstance(detail,dict):raise ValueError('invalid capture summary')
+            except Exception as exc:
+                detail=dict(summary_error=type(exc).__name__)
             with self.lock:
                 def finish(s):
                     job = self.store.find(s, 'jobs', key)
-                    job.update(status=result_state, finished_at=now(), error=error)
+                    metrics=dict(targets=len(targets),captured=sum(r['status']=='captured' for r in job['results']),
+                        unsuccessful=sum(r['status']!='captured' for r in job['results']))
+                    metrics.update(detail)
+                    job.update(status=result_state, finished_at=now(), error=error,
+                        elapsed_seconds=max(0.,self.monotonic()-started),metrics=metrics)
                     schedule = s['schedule']
-                    if schedule['enabled'] and result_state in ('completed', 'completed_with_errors'):
-                        schedule.update(state='waiting', next_due_at=self.clock() + schedule['interval_seconds'])
+                    if (result_state=='completed' and job.get('schedule_batch_id') is not None
+                            and job['schedule_batch_id']==schedule.get('batch_id')):
+                        schedule['completed_rounds']=schedule.get('completed_rounds',0)+1
+                    limit=schedule.get('round_limit')
+                    if schedule['enabled'] and result_state=='completed':
+                        if limit is not None and schedule.get('completed_rounds',0)>=limit:
+                            self.store.pause(s,'batch_completed')
+                        else:schedule.update(state='waiting', next_due_at=self.clock() + schedule['interval_seconds'])
                     else:
                         self.store.pause(s, 'inspection_' + result_state)
                 self.store.change(None, 'inspection_finish', dict(id=key, status=result_state), finish)

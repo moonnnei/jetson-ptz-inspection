@@ -68,6 +68,15 @@ def route(instruments, start):
         else:
             pending.append(dict(id=item['id'], name=item['name'],
                                 pose=pose(item['visit_pose'])))
+    result, total = nearest_stops(pending, current)
+    return dict(stops=result, blocked=blocked, angular_cost=round(total, 4),
+                algorithm='nearest_neighbor_bounded_axes', optimality_claim=False)
+
+
+def nearest_stops(stops, start):
+    """Ordering only: callers separately establish each stop's execution status."""
+    current = pose(start)
+    pending = list(stops)
     result = []
     total = 0.0
     while pending:
@@ -80,5 +89,4 @@ def route(instruments, start):
         pending.remove(item)
         result.append(item)
         current = item['pose']
-    return dict(stops=result, blocked=blocked, angular_cost=round(total, 4),
-                algorithm='nearest_neighbor_bounded_axes', optimality_claim=False)
+    return result, total

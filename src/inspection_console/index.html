@@ -4,11 +4,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="control-token" content="__TOKEN__">
-  <title>仪表巡检 · 场景审核控制台</title>
-  <link rel="stylesheet" href="/style.css">
-  <script src="/app.js" defer></script>
+  <title>仪表巡检工作台</title>
+  <link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/workbench.css?v=20261024-dashboard2">
+  <link rel="stylesheet" href="/vendor/annotorious-openseadragon.css">
+  <link rel="stylesheet" href="/results.css?v=20261024-dashboard2">
+  <script src="/vendor/openseadragon.min.js" defer></script><script src="/vendor/annotorious-openseadragon.js?v=20261024-csp1" defer></script>
+  <script src="/first_capture.js" defer></script>
+  <script src="/initialization.js" defer></script>
+  <script src="/results_model.js?v=20261024-dashboard2" defer></script><script src="/app.js?v=20261024-dashboard2" defer></script>
+  <script src="/overview.js" defer></script>
+  <script src="/live.js" defer></script><script src="/workbench.js?v=20261024-dashboard2" defer></script><script src="/panorama_workbench.js?v=20261024-box3" defer></script>
+  <script src="/results_ui.js?v=20261024-dashboard2" defer></script>
 </head>
-<body>
+<body data-workspace="dashboard">
   <aside class="sidebar">
     <div class="brand"><span class="brand-mark">◉</span><div>仪表巡检<small>JETSON PTZ INSPECTION</small></div></div>
     <div class="nav-caption">工作空间</div>
@@ -21,20 +29,48 @@
     <div class="sidebar-bottom"><span class="dot"></span> 本地持久化存储<p id="connection">正在连接…</p><small>图像发现 → 人工确认 → 周期采集</small></div>
   </aside>
   <main>
-    <header class="topbar"><div><span class="eyebrow">SCENE REVIEW / 阶段一</span><h1 id="page-title">场景与候选</h1></div><div class="top-actions"><a class="button ghost" href="/api/export" download>导出清单</a><button id="refresh" class="ghost">刷新</button><button id="stop" class="stop">暂停巡检</button></div></header>
+    <header class="topbar"><div><span class="eyebrow">SCENE REVIEW / 阶段一</span><h1 id="page-title">仪表巡检工作台</h1></div><div class="top-actions"><button id="advanced-toggle" type="button">更多记录与设置</button><a class="button ghost" href="/api/export" download>导出清单</a><button id="refresh" class="ghost">刷新</button><button id="stop" class="stop">暂停巡检</button></div></header>
+    <nav class="workspace-switch" aria-label="选择工作空间"><button id="workspace-dashboard" type="button" aria-pressed="true">采集看板</button><button id="workspace-setup" type="button" aria-pressed="false">建图与设置</button><span id="workspace-hint">查看当前仪表照片与历史采集</span></nav>
+    <div class="workbench-steps"><span>① 移动镜头，记录扫描范围</span><span>② 扫描生成全景与候选</span><span>③ 排除误检、框选补漏</span><span>④ 自动建档与巡检</span></div>
     <div class="workflow"><span class="current">1　原始视图建档</span><i>→</i><span class="current">2　候选人工审核</span><i>→</i><span>3　云台回访标定</span><i>→</i><span>4　周期巡检</span></div>
     <div id="toast" role="status" aria-live="polite" hidden></div>
-    <div class="mapbar"><label>当前场景 <select id="map-select" aria-label="选择场景"></select></label><span class="badge" id="map-status">尚无场景</span><span id="map-date" class="muted"></span></div>
+    <details id="live-card" class="card live-card" open>
+      <summary><strong>实时监看</strong><span id="live-badge" class="badge neutral">连接中</span><span class="muted">当前镜头画面</span></summary>
+      <div class="live-toolbar"><div class="live-modes" role="group" aria-label="选择监看画面"><button id="live-raw" type="button" aria-pressed="true">实时画面</button><button id="live-detection" type="button" aria-pressed="false">检测画面</button></div><span id="live-metrics" class="muted"></span><button id="live-pause" type="button">暂停画面</button><button id="live-fullscreen" type="button">全屏查看</button></div>
+      <div class="live-control-layout"><div><div id="live-stage" class="live-stage"><img id="live-image" alt="云台相机当前实时画面" hidden><div id="live-placeholder" class="live-placeholder">正在连接实时视频…</div></div>
+      <p id="live-caption" class="footnote">实时画面直接显示视频最新帧；切换检测画面可查看模型标注。这里的画面与下方历史采集图分开展示。</p>
+      </div><aside class="ptz-panel"><h3>控制摄像头</h3><div id="camera-pose">正在读取相机位置…</div>
+      <div class="ptz-pad"><span></span><button type="button" data-camera-command="up" aria-label="向上">↑</button><span></span><button type="button" data-camera-command="left" aria-label="向左">←</button><button id="camera-stop" class="stop" type="button">停止</button><button type="button" data-camera-command="right" aria-label="向右">→</button><span></span><button type="button" data-camera-command="down" aria-label="向下">↓</button><span></span></div>
+      <div class="zoom-buttons"><button type="button" data-camera-command="zoom_out">－ 缩小</button><button type="button" data-camera-command="zoom_in">＋ 放大</button></div><label>移动步幅<select id="manual-step"><option value=".5">微调</option><option value="2" selected>普通</option><option value="5">快速</option></select></label>
+      <p><label class="check"><input id="click-center" type="checkbox" checked>点击实时画面自动回中</label></p><p id="camera-status" role="status"></p></aside></div>
+    </details>
+    <article id="initialization-card" class="card" hidden>
+      <div class="card-title"><div><h2>扫描建图</h2><p>先用上方云台控制选定扫描区域。扫描完成先显示全景和疑似仪表，审核后再建立采集位置。</p></div><span id="initialization-badge" class="badge neutral">等待初始化</span></div>
+      <div class="scan-range-row"><button id="range-start" type="button">记录左上角</button><small id="range-start-label">未记录</small><button id="range-end" type="button">记录右下角</button><small id="range-end-label">未记录</small><label class="check"><input id="scan-full-range" type="checkbox">改用全范围环视</label></div><p id="range-summary" class="range-result"></p>
+      <div class="form-actions"><button id="initialize-start" class="primary" type="button">开始扫描建图</button><button id="initialize-stop" class="danger-outline" type="button" disabled>停止当前任务</button><button id="workflow-back" type="button">停止并返回范围设置</button><button id="range-clear" type="button">重选扫描范围</button></div>
+      <div class="scan-progress"><progress id="scan-progress" max="100" value="0" aria-label="扫描与建图进度"></progress><strong id="scan-progress-label">尚未开始</strong><span id="scan-elapsed"></span></div>
+      <div id="initialization-status" class="status-box" role="status" aria-live="polite">等待连接</div>
+      <p class="footnote">扫描采用 1 倍、重叠布点，正常结束返回起点。多行总览按俯仰行展示；空白区未覆盖。全景可放大补漏，候选默认保留，勾选排除误检后再开始建档。</p>
+    </article>
+    <div class="mapbar scene-archive"><label>场景档案 <select id="map-select" aria-label="选择当前或历史场景"></select></label><button id="scene-open-history" type="button">查看此场景采集记录</button><span class="badge" id="map-status">尚无场景</span><span id="map-date" class="muted"></span><p id="scene-archive-note" class="scene-archive-note" role="status">新建场景会独立保存，原场景和采集记录继续保留。</p></div>
     <div id="empty" class="empty" hidden><h2>从原始图像开始建立仪表清单</h2><p>请先使用工程中的 import_review.py 导入图像与候选框。</p><p>导入后即可审核、补框、命名和保存巡检间隔。</p></div>
     <section id="review-panel" class="panel">
       <div id="stats" class="stats"></div>
+          <article id="overview-card" class="card" hidden>
+            <div class="card-title"><div><h2 id="overview-title">环视大图审核</h2><p id="overview-status"></p></div><button id="overview-expand" type="button">展开大图</button></div>
+            <div id="panorama-tools" class="overview-toolbar" role="toolbar" aria-label="全景操作"><button id="scene-pan" type="button" aria-pressed="true">浏览 / 选择</button><button id="scene-add" type="button" aria-pressed="false">＋ 画框补漏</button><button id="scene-exclude" type="button" disabled>排除选中</button><button id="scene-clear" type="button">取消选择</button><button id="scene-fit" type="button">显示扫描区域</button><label class="check"><input id="scene-show-excluded" type="checkbox">显示已排除</label><span id="scene-selection"></span></div>
+            <div class="overview-toolbar legacy-overview-toolbar" role="toolbar" aria-label="大图操作">
+              <button id="overview-pan" type="button" aria-pressed="true">拖动 / 点选</button><button id="overview-select" type="button" aria-pressed="false">框选多个</button><button id="overview-add" type="button" aria-pressed="false">＋ 补充漏检</button>
+              <span class="toolbar-separator"></span><button id="overview-minus" type="button" aria-label="缩小大图">−</button><span id="overview-scale">适应画幅</span><button id="overview-plus" type="button" aria-label="放大大图">＋</button><button id="overview-fit" type="button">显示全图</button>
+              <label class="check"><input id="overview-pending" type="checkbox">只看待审</label><label class="check"><input id="overview-rejected" type="checkbox">显示已排除</label>
+            </div>
+            <div class="overview-workspace"><div id="overview-viewport" class="overview-viewport"><div id="panorama-viewer" aria-label="可缩放、选择和补框的全景图"></div><div id="scene-draw-layer" class="panorama-draw-layer" aria-label="按住左键拖动，框出漏检表盘，松开保存" hidden><div id="scene-draw-preview" class="panorama-draw-preview" hidden></div></div><div id="scene-mode" class="panorama-mode">滚轮缩放 · 拖动平移 · 点击编号框定位</div><svg id="overview" role="img" aria-label="高级模式环视图" tabindex="0"></svg><div id="overview-mode-hint" class="overview-mode-hint">滚轮放大 · 拖动平移</div></div><aside class="overview-inspector"><div class="card-title"><strong>疑似仪表</strong><span id="workbench-count" class="count"></span></div><p class="footnote">点击缩略图或编号，定位全景中的橙色框；勾选用于批量排除。未排除的目标默认保留。</p><div id="scene-focus-detail" class="scene-focus-detail" role="status" aria-live="polite" hidden></div><div id="workbench-candidates" class="workbench-candidate-list"></div><button id="commission-reviewed" class="primary" type="button" disabled>完成排除与补漏，自动建档</button><div id="overview-inspector"></div></aside></div>
+            <div class="overview-review-actions"><strong id="overview-selected-count">已选 0 项</strong><button id="overview-confirm" type="button" class="primary" disabled>确认选中</button><button id="overview-reject" type="button" disabled>排除选中</button><button id="overview-clear" type="button" disabled>取消选择</button><span id="overview-visible-count" class="muted"></span></div>
+            <p class="footnote" id="overview-hint">总览用于选择，高清来源用于核对；确认或补框只修改清单，不转动相机。</p>
+          </article>
+      <details id="source-details" class="source-details"><summary>高清来源与逐图审核（按需展开）</summary>
       <div class="review-layout">
         <div class="scene-column">
-          <article id="overview-card" class="card" hidden>
-            <div class="card-title"><div><h2 id="overview-title">场景总览</h2><p id="overview-status"></p></div><span class="badge neutral">位置预览</span></div>
-            <div class="overview-viewport"><svg id="overview" role="img" aria-label="场景总览与候选位置"></svg></div>
-            <p class="footnote" id="overview-hint">点击候选回到高清来源图审核。未配准视图可在下方单独选择；总览不代表完整覆盖或云台回访已标定。</p>
-          </article>
           <article class="card scene-card">
             <div class="card-title"><div><h2>场景原图</h2><p id="image-description"></p></div><span class="badge neutral">原始视图索引</span></div>
             <div class="scene-tools"><select id="frame-select" aria-label="选择原始视图"></select><button id="draw-add">＋ 手动补框</button><button id="draw-edit">修正选中框</button><button id="cancel-draw" hidden>取消框选</button><label class="check"><input id="show-rejected" type="checkbox">显示已排除</label><label class="check"><input id="panorama-only" type="checkbox" checked>全景检测与人工候选</label></div>
@@ -46,20 +82,44 @@
           <p class="footnote" id="provenance-note">当前展示历史现场图像及已有模型候选。裁剪预览来自同一张原图，不代表已完成云台放大采集或全景拼接。</p>
         </div>
         <aside class="card candidates-card"><div class="card-title"><div><h2>候选审核</h2><p>确认仪表，排除误检，补全遗漏</p></div><span id="candidate-count" class="count"></span></div><div id="candidates"></div></aside>
-      </div>
+      </div></details>
+    </section>
+    <details id="patrol-controls" class="dashboard-controls"><summary><strong>采集操作与周期设置</strong><span id="dashboard-run-status" role="status"></span></summary><section id="quick-patrol"></section></details>
+    <section id="results-panel" class="card results-card" hidden aria-label="仪表采集结果">
+      <div class="card-title"><div><h2>仪表图墙</h2><p>点击图片放大查看；每块仪表保持固定位置，新图采到后再更新。</p></div></div>
+      <div class="results-tabs" role="tablist" aria-label="选择采集结果"><button id="results-current-tab" type="button" role="tab" aria-selected="true" aria-controls="results-current">当前轮次</button><button id="results-history-tab" type="button" role="tab" aria-selected="false" aria-controls="results-history">历史结果</button></div>
+      <div id="results-current" role="tabpanel" aria-labelledby="results-current-tab"><p id="results-current-summary" role="status"></p><progress id="results-progress" max="1" value="0" aria-label="本轮取得新图的进度"></progress><p id="results-current-note"></p><div id="results-current-grid" class="result-grid"></div></div>
+      <div id="results-history" role="tabpanel" aria-labelledby="results-history-tab" hidden><div class="result-toolbar"><label>历史场景<select id="results-history-scene" aria-label="选择历史结果所属场景"></select></label><label>拍摄日期<input id="results-date" type="date"></label><label>采集轮次<select id="results-history-round" aria-label="选择历史采集轮次"></select></label><div class="result-round-nav"><button id="results-history-prev" type="button" aria-label="上一轮">← 上一轮</button><button id="results-history-next" type="button" aria-label="下一轮">下一轮 →</button></div><button id="results-compare-toggle" type="button" aria-pressed="false">跨轮对比</button><button id="results-load-archive" type="button">刷新历史</button><span id="results-archive-state" role="status"></span></div><p class="footnote">选择场景、日期和轮次；跨轮对比每次显示最多四轮。失败轮次保留空缺。</p><p id="results-history-summary"></p><div id="results-history-grid" class="result-grid"></div><div id="results-history-comparison" class="result-comparison" hidden></div></div>
     </section>
     <section id="assets-panel" class="panel" hidden>
+      <article class="card" id="annotation-card" hidden><h2>自动建档与补漏</h2><p>在环视大图圈出漏检表盘后，系统自动寻找、构图、保存位置并验证回访。检测候选由系统复检和去重。</p><div class="form-actions"><button id="annotation-discover" type="button">自动复检检测候选</button><button id="annotation-resume" type="button">继续自动建档</button></div><div id="annotation-status" class="status-box" role="status"></div></article>
       <article class="card"><div class="card-title"><div><h2>已确认的仪表</h2><p>编号长期保留。勾选代表计划采集；回访标定通过后才能执行。</p></div></div><div id="asset-list"></div></article>
+      <article class="card"><div class="card-title"><div><h2>首次逐表采集</h2><p>清单确认后，逐表对准、放大并试采，保存后续回访所需的照片和位置。</p></div></div><div class="form-actions"><button id="first-prepare" type="button">生成首次采集计划</button><button id="first-stop" type="button" class="danger-outline" disabled>停止首次采集</button></div><div id="first-plan" class="status-box">确认清单后生成计划；此操作不会转动相机。</div><label class="check"><input id="first-site-ready" type="checkbox">已核对上述范围，相机固定、线缆无遮挡，仪表保持静止</label><div class="form-actions"><button id="first-start" type="button" class="primary" disabled>开始逐表采集</button></div><div id="first-status" class="status-box" role="status">等待准备</div><p class="footnote">每块表先尝试居中，受运动范围限制时保留可达位置，并调整倍率以避开画面边缘；离开后返回检查两次。偏心会明确标记，画面不完整或无法确认目标时停止并保留诊断。</p></article>
       <article class="card warning-card"><h2>平台位置发生变化</h2><p>平台移动后，历史云台角度不能用于新位置。将场景置为失效，保留历史记录，并重新建图和绑定仪表。</p><button id="invalidate" class="danger-outline">标记当前场景失效</button></article>
     </section>
     <section id="plan-panel" class="panel" hidden>
       <div class="two-column">
-        <article class="card"><h2>周期巡检配置</h2><p>每轮结束后等待指定间隔再开始下一轮，同一时刻只执行一轮。</p><form id="schedule-form"><label class="field">巡检间隔（秒）<input id="interval" type="number" min="60" max="86400" step="1" value="300" required></label><div class="form-actions"><button class="primary" type="submit">保存间隔</button><button type="button" id="arm" disabled>启用周期巡检</button></div></form><div class="status-box" id="schedule-status"></div><p class="footnote">网页关闭不承担运动保活。后续由服务端执行巡检与停止保护；当前版本尚未接入实机采集适配器。</p></article>
-        <article class="card"><h2>采集路线预览</h2><p>仅使用人工确认并启用的仪表。先核对回访参考，再标定逐表居中位置。</p><div class="form-actions"><button id="reference-plan">检查回访准备</button><button id="route-plan">检查回访路线</button></div><div id="reference-result" class="status-box" hidden></div><div id="route-result" class="status-box">请先在仪表清单中确认需要采集的仪表。</div></article>
+        <article class="card"><h2>自动巡检</h2><p>每轮结束后等待指定间隔再开始下一轮。可设置运行轮数，完成后自动停止。</p><div class="form-actions"><button type="button" id="run-once" class="primary" disabled>立即采集一轮</button></div><form id="schedule-form"><label class="field">巡检间隔（秒）<input id="interval" type="number" min="60" max="86400" step="1" value="300" required></label><label class="field">最多运行轮数<input id="round-limit" type="number" min="1" max="1000" step="1" placeholder="留空为持续运行"></label><div class="form-actions"><button type="submit">保存巡检配置</button><button type="button" id="arm" disabled>启用周期巡检</button></div></form><div class="status-box" id="schedule-status"></div><p class="footnote">巡检由设备端执行。单轮采集结束即停止；目标校验失败时保留诊断图并暂停周期任务，重启后保持暂停。</p></article>
+        <article class="card"><h2>采集路线预览</h2><p>使用已验证并启用的仪表和软件预置位。先检查回访准备，再预览采集顺序。</p><div class="form-actions"><button id="reference-plan">检查回访准备</button><button id="route-plan">检查回访路线</button></div><div id="reference-result" class="status-box" hidden></div><div id="route-result" class="status-box">请先查看仪表清单与回访准备。</div></article>
       </div>
       <article class="card"><div class="card-title"><div><h2>扫描布点规划</h2><p>生成往返行式视点网格。视场角需实测；本页只计算方案，不驱动相机。</p></div><span class="badge neutral">规划预览</span></div><form id="scan-form"><div class="scan-fields"><label>水平起点 °<input name="pan_min" type="number" min="0" max="350" value="180" step="0.1" required></label><label>水平终点 °<input name="pan_max" type="number" min="0" max="350" value="220" step="0.1" required></label><label>俯仰起点 °<input name="tilt_min" type="number" min="0" max="90" value="0" step="0.1" required></label><label>俯仰终点 °<input name="tilt_max" type="number" min="0" max="90" value="20" step="0.1" required></label><label>水平视场角 °<input name="hfov" type="number" min="1" max="120" value="40" step="0.1" required></label><label>垂直视场角 °<input name="vfov" type="number" min="1" max="100" value="25" step="0.1" required></label><label>重叠比例<input name="overlap" type="number" min="0.2" max="0.7" value="0.35" step="0.05" required></label><label>固定光学倍率<input name="zoom" type="number" min="1" max="2" value="1" step="0.1" required></label></div><button class="primary" type="submit">生成扫描网格</button></form><div id="scan-result"></div></article>
     </section>
     <section id="history-panel" class="panel" hidden><article class="card"><h2>巡检采集记录</h2><div id="jobs"></div></article><article class="card"><div class="card-title"><div><h2>审核操作记录</h2><p>最近 80 项操作；完整审计日志保存在本地数据库。</p></div></div><div id="audit"></div></article></section>
   </main>
+  <dialog id="result-viewer" class="result-viewer" aria-labelledby="result-viewer-title">
+    <div id="result-viewer-content" class="result-viewer-content">
+    <header class="result-viewer-header"><div><h2 id="result-viewer-title"></h2><p id="result-viewer-meta"></p></div><button id="result-viewer-close" type="button" aria-label="关闭仪表大图">× 关闭</button></header>
+    <div class="result-viewer-toolbar"><button id="result-viewer-prev" type="button">← 上一仪表</button><button id="result-viewer-next" type="button">下一仪表 →</button><span class="result-tool-gap"></span><button id="result-viewer-out" type="button" aria-label="缩小仪表图片">−</button><span id="result-viewer-zoom"></span><button id="result-viewer-in" type="button" aria-label="放大仪表图片">＋</button><button id="result-viewer-fit" type="button">适应窗口</button><button id="result-viewer-native" type="button">原始大小</button><button id="result-viewer-fullscreen" type="button">全屏</button></div>
+    <div id="result-viewer-stage" class="result-viewer-stage" tabindex="0" aria-label="滚轮缩放，按住拖动查看仪表"><canvas id="result-viewer-canvas" role="img"></canvas><p id="result-viewer-message" role="status"></p></div>
+    <footer class="result-viewer-footer"><span id="result-viewer-detail"></span><button id="result-viewer-fresh" type="button" hidden>已有新图，点击更新</button><button id="result-viewer-download" type="button" disabled>下载裁剪图</button><a id="result-viewer-original" target="_blank" rel="noopener noreferrer">打开完整原图 ↗</a></footer>
+    </div>
+  </dialog>
+  <dialog id="result-rename-dialog" class="result-rename-dialog" aria-labelledby="result-rename-title"><form id="result-rename-form"><h2 id="result-rename-title">修改仪表名称</h2><p id="result-rename-id"></p><label class="field">仪表名称<input id="result-rename-input" type="text" maxlength="100" required></label><div class="form-actions"><button id="result-rename-save" type="submit" class="primary">保存名称</button><button id="result-rename-cancel" type="button">取消</button></div><p class="footnote">仅修改名称，仪表编号与历史照片继续保留。采集或运动期间暂停改名。</p></form></dialog>
+  <dialog id="overview-source-dialog" aria-labelledby="overview-source-title">
+    <div class="card-title"><div><h2 id="overview-source-title">核对漏检表盘的高清来源</h2><p>核对蓝框是否包含同一块表盘，可直接在原图重画。保存后进入待审核清单。</p></div><button id="overview-source-close" type="button" aria-label="关闭来源核对">×</button></div>
+    <label class="field">自动找到的高清来源<select id="overview-source-choice" aria-label="补框高清来源"></select></label>
+    <div class="overview-source-layout"><div class="overview-source-image"><svg id="overview-source-svg" role="img" aria-label="核对并重画补框高清原图" tabindex="0"></svg></div><div><h3>实际保存的原图裁剪</h3><div id="overview-source-crop"></div><p id="overview-source-status" class="hint"></p></div></div>
+    <div class="form-actions"><button id="overview-source-save" type="button" class="primary" disabled>保存为待审候选</button><button id="overview-source-cancel" type="button">取消</button></div><p class="footnote">全景关联为近似结果；此处只保存来源和人工框，不生成已验证回访位置。</p>
+  </dialog>
 </body>
 </html>

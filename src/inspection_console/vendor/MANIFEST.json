@@ -1,0 +1,70 @@
+[
+  {
+    "file": "openseadragon.min.js",
+    "package": "openseadragon",
+    "version": "6.1.1",
+    "license": "BSD-3-Clause",
+    "source": "https://registry.npmjs.org/openseadragon/-/openseadragon-6.1.1.tgz",
+    "integrity": "sha512-g4iKe2q8B642SaBT3+x4ZF3/8b1TxPPydyjmtrOLgDrlYWMKd9ZXM+1Cb/xa9DVySkvs/7l6HR1nHKfD5F3Tsw==",
+    "sha256": "14d587cd3ee7c4861f1a41077ce642029364a21029956ba635bd8fb1202cf9ad",
+    "bytes": 352735
+  },
+  {
+    "file": "openseadragon-LICENSE.txt",
+    "package": "openseadragon",
+    "version": "6.1.1",
+    "license": "BSD-3-Clause",
+    "source": "https://registry.npmjs.org/openseadragon/-/openseadragon-6.1.1.tgz",
+    "integrity": "sha512-g4iKe2q8B642SaBT3+x4ZF3/8b1TxPPydyjmtrOLgDrlYWMKd9ZXM+1Cb/xa9DVySkvs/7l6HR1nHKfD5F3Tsw==",
+    "sha256": "17da96b26ac706d2cbd06d4555dedb43026782f4943faf0156fe7acf89454228",
+    "bytes": 1525
+  },
+  {
+    "file": "annotorious-openseadragon.js",
+    "package": "@annotorious/openseadragon",
+    "version": "3.9.5",
+    "license": "BSD-3-Clause",
+    "source": "https://registry.npmjs.org/@annotorious/openseadragon/-/openseadragon-3.9.5.tgz",
+    "integrity": "sha512-L423LCW5mzOm2oghRhwOArt+WiTKakLzEK8WZuRr+I8mV1Rga57xd5Cq5eTZ74ESANdB6AMCELQtEgHxubt4Wg==",
+    "sha256": "82d9818dc1fa490935f855a395f4c0b7f090c33a3115fe8a7642d4a8e5d69d35",
+    "bytes": 695473,
+    "upstream_sha256": "4ea2fd48e94d3a88f23feddb40957619ce42f9727d38c5427b70f1a2d85bf0da",
+    "modified": true,
+    "patch": "tools/web_ui/build_csp_vendor.py",
+    "compatibility_package": {
+      "name": "@pixi/unsafe-eval",
+      "version": "7.4.3",
+      "license": "MIT",
+      "source": "https://registry.npmjs.org/@pixi/unsafe-eval/-/unsafe-eval-7.4.3.tgz",
+      "integrity": "sha512-iR2iLcMculCSmn3x446ICCL5iokmFuLZDgNo7k1Q5rzNiULELIixfpSJwvlJqrJPY1kda0oqGHgVGRQ2vGfaLg=="
+    }
+  },
+  {
+    "file": "annotorious-openseadragon.css",
+    "package": "@annotorious/openseadragon",
+    "version": "3.9.5",
+    "license": "BSD-3-Clause",
+    "source": "https://registry.npmjs.org/@annotorious/openseadragon/-/openseadragon-3.9.5.tgz",
+    "integrity": "sha512-L423LCW5mzOm2oghRhwOArt+WiTKakLzEK8WZuRr+I8mV1Rga57xd5Cq5eTZ74ESANdB6AMCELQtEgHxubt4Wg==",
+    "sha256": "9a54379ca5685f95c6dc85097de7ef3449007f144cf33d038fc52e6f1c255128",
+    "bytes": 6174
+  },
+  {
+    "file": "annotorious-LICENSE.txt",
+    "package": "@annotorious/openseadragon",
+    "version": "3.9.5",
+    "license": "BSD-3-Clause",
+    "source": "https://raw.githubusercontent.com/annotorious/annotorious/f780879410ff4f2d4fd0b2cb1ae1bd596a40fe65/LICENSE",
+    "sha256": "3ae9fe44013f55ecbb4732180061c6e5ada08e5bb493967cec2c03cd19a6626a",
+    "bytes": 1499
+  },
+  {
+    "file": "pixi-unsafe-eval-LICENSE.txt",
+    "package": "@pixi/unsafe-eval",
+    "version": "7.4.3",
+    "license": "MIT",
+    "source": "https://raw.githubusercontent.com/pixijs/pixijs/v7.4.3/LICENSE",
+    "sha256": "5ce7447bc57f7349ffc48338782fbcabe613696e00712b20d66bc58e780f9473",
+    "bytes": 1092
+  }
+]

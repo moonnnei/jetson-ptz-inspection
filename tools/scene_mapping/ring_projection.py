@@ -3,11 +3,11 @@
 Angle wrapping here is an image-coordinate operation only. This module has no
 camera access and never sends a motor across its mechanical limit.
 """
+from __future__ import division
 import argparse
 import hashlib
 import json
 import math
-from pathlib import Path
 
 import cv2
 import numpy as np
@@ -46,7 +46,7 @@ def estimate_focal(images, poses, edges):
 
 
 def render(images,poses,focal,sign=1,width=4096):
-    if type(width) is not int or not 512<=width<=8192 or not math.isfinite(focal) or focal<=0 or sign not in (-1,1):
+    if type(width) is not int or not 512<=width<=8192 or not np.isfinite(focal) or focal<=0 or sign not in (-1,1):
         raise ValueError('invalid cylindrical preview parameters')
     height0,width0=images[0].shape[:2]
     scale=width/(2*math.pi)
@@ -87,6 +87,7 @@ def projected_preview(images,poses,edges):
 
 
 def main():
+    from pathlib import Path
     from build_map import read_image,write_image
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('mapped_manifest');parser.add_argument('--registration',required=True)

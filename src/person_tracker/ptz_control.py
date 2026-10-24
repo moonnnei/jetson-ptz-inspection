@@ -6,6 +6,7 @@ import getpass
 import json
 import os
 import time
+import threading
 import xml.etree.ElementTree as ET
 from urllib.request import (Request, build_opener, HTTPDigestAuthHandler,
                             HTTPPasswordMgrWithDefaultRealm, ProxyHandler)
@@ -18,7 +19,16 @@ class Camera:
         self.url = url.rstrip('/')
         manager = HTTPPasswordMgrWithDefaultRealm()
         manager.add_password(None, self.url + '/', user, password)
-        self.opener = build_opener(ProxyHandler({}), NoRedirect(), HTTPDigestAuthHandler(manager))
+        self._password_manager=manager
+        self._thread_local=threading.local()
+
+    @property
+    def opener(self):
+        # Digest nonce/retry state belongs to one thread. Status, STOP and
+        # snapshot requests must not mutate a shared authentication handler.
+        if not hasattr(self._thread_local,'opener'):
+            self._thread_local.opener=build_opener(ProxyHandler({}),NoRedirect(),HTTPDigestAuthHandler(self._password_manager))
+        return self._thread_local.opener
 
     def request(self, path, body=None):
         req = Request(self.url + path, data=body, method='PUT' if body is not None else 'GET',

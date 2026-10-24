@@ -96,11 +96,12 @@ def audit(root, verify_manifest=False):
 
     for path in sorted((root / 'config').glob('*.example.json')):
         config = json.loads(path.read_text(encoding='utf-8'))
-        if config.get('user') != 'YOUR_CAMERA_USER':
+        user_key='camera_user' if 'camera_origin' in config else 'user'
+        if config.get(user_key) != 'YOUR_CAMERA_USER':
             errors.append('Example username is not a placeholder: ' + path.name)
         if any(k.lower() in ('password', 'passwd', 'secret', 'token') for k in config):
             errors.append('Credential field in example config: ' + path.name)
-        for key in ('camera', 'rtsp_url'):
+        for key in ('camera', 'camera_origin', 'rtsp_url'):
             url = config.get(key)
             if url and (urlsplit(url).username is not None or urlsplit(url).password is not None):
                 errors.append('Credentials in example URL: ' + path.name)

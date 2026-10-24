@@ -2,28 +2,62 @@
 
 [![离线检查](https://github.com/moonnnei/jetson-ptz-inspection/actions/workflows/ci.yml/badge.svg)](https://github.com/moonnnei/jetson-ptz-inspection/actions/workflows/ci.yml)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
-[![已发布演示](https://img.shields.io/badge/demo-v0.5.0-orange.svg)](https://github.com/moonnnei/jetson-ptz-inspection/releases/tag/v0.5.0-demo)
+[![历史演示](https://img.shields.io/badge/demo-v0.5.0-orange.svg)](https://github.com/moonnnei/jetson-ptz-inspection/releases/tag/v0.5.0-demo)
 
-[English](README.en.md) · [文档](docs/README.md) · [部署实战文章](docs/TX2_YOLO_PTZ_TUTORIAL.md) · [系统架构](docs/ARCHITECTURE.md) · [审核控制台](docs/REVIEW_CONSOLE.md) · [部署](docs/DEPLOYMENT.md) · [路线图](docs/ROADMAP.md)
+[English](README.en.md) · [文档](docs/README.md) · [部署实战](docs/TX2_YOLO_PTZ_TUTORIAL.md) · [场景初始化](docs/SCENE_INITIALIZATION.md) · [自动建档](docs/AUTOMATIC_REGISTRATION.md) · [软件预置位巡检](docs/SOFTWARE_PRESET_PATROL.md) · [路线图](docs/ROADMAP.md)
 
-面向分散仪表的 Jetson TX2 云台视觉巡检实验工程。相机提供 RTSP 视频和 ISAPI 云台控制，系统组合目标检测、扫描采集、全景总览、人工复审、仪表建档及视觉居中等模块。
+**冻结版本：[`freeze-2026-10-24`](https://github.com/moonnnei/jetson-ptz-inspection/releases/tag/freeze-2026-10-24)**。本版交付固定机位的仪表图像巡检与采集看板，读数和超分尚未接入。功能范围、复现入口、已有实验和恢复边界见[冻结说明](docs/FROZEN_BASELINE_2026-10-24.md)。
 
-最终流程是：平台停稳后扫描场景，在网页确认需要采集的仪表，为每块表建立采集位置，再按周期依次回访、居中放大、保存图像，并对接读数算法。安装位置固定时复用采集位置；安装或场景发生变化时重新定位或建图。
+新增[有限轮次与执行统计](docs/BOUNDED_PERIODIC.md)：可设置运行 N 轮后由 TX2 自动停止，网页显示批次进度、单轮耗时、新拍图及质量拒绝数量。
 
-**当前 main 是场景审核开发版；v0.5.0-demo 保留人体替代仪表的运动演示。真实仪表的自动回访、周期采集和读数尚未完成。** 工程不生成示例假读数，`reading` 保持 `null`。
+新增[巡检工作台修订](docs/WORKBENCH_2026-10-24.md)：限定范围扫描、持续实时监看、最新手动指令优先、扫描进度与停止返回；全景接入 OpenSeadragon 与 Annotorious，候选后台归组，默认保留，只需排除误检和画框补漏。
 
-## 两条可运行的路径
+新增[仪表采集看板](docs/RESULT_GALLERY.md)：固定位置的仪表图墙，当前轮次逐卡更新，旧图注明来源后补位；点击放大、缩放拖动、按轮浏览与四轮对比，支持带名称/时间的原像素裁剪图下载与仪表自命名。建图与云台控制在单独入口，超分不在当前流程中。
 
-| 路径 | 当前用途 | 运行条件 |
-| --- | --- | --- |
-| 场景审核与仪表建档 | 导入高清原图、全景和检测候选，人工确认/排除/补框/合并，保存仪表编号和回访参考 | Python 3.5+ 标准库；PC 或 TX2；默认不控制相机 |
-| 固定目标巡检 Demo | 人体作为固定目标，验证扫描、去重、规划、粗定位、P 视觉居中、变焦和留图 | TX2、匹配相机及本地配置；会产生真实运动 |
+[场景档案](docs/SCENE_ARCHIVE.md)保留新建前的全景、仪表与采集记录，支持独立查看各场景历史，并记住刷新前选中的场景。
 
-可选的 [PC 场景工具](tools/scene_mapping/README.md)负责图像配准、环视预览、候选发现和参考图复核。它们尚未全部迁移到 TX2，也不是开机自动执行流程。
+面向固定机位、分散仪表的 Jetson TX2 云台图像巡检工程。海康相机提供 RTSP 视频、高清抓图和 ISAPI 运动控制；TX2 运行模型、环视初始化、建档队列、逐表采集和网页服务，PC 用于训练、模型导出与独立实验。
 
-## 快速开始：普通电脑
+当前目标是**自动建立采集位置并周期留图**。扫描后先显示全景和归组后的疑似仪表，默认保留；人工只需排除误检和补画漏检框。随后系统根据来源位置拍新图，在有限邻域内寻找、构图、放大、择优，离开后重新回访验证，保存软件预置位。不要求逐表选图或手工输入云台角度。数值读数不在本阶段，`reading` 保持 `null`。
 
-建议 Python 3.11 或 3.12。离线回归与审核服务不需要安装 PyTorch、OpenCV 或相机 SDK。
+## 冻结能力与此前实机结果
+
+下表的四表数据来自此前固定现场实验，不是发布时重新采集的结果，也不代表当前所选场景始终有四块表。新看板与历史档案包含本日后续修订；发布冻结的离线检查另见[检查记录](CHECKS.md)。
+
+| 项目 | 实际完成情况 |
+| --- | --- |
+| 标注驱动首次建档 | 固定四块真实表盘均建立新参考，完成离开后独立回访；旧模糊扫描模板不再阻挡拍摄第一张新图 |
+| TX2 本地初始化 | 网页驱动 19 视点高清扫描、227 次检测；34 条观测归为 27 个假设组，有限安排 12 组，15 组延后 |
+| 自动候选复检和去重 | 新场景输出的跨倍率重复经真实新参考复核后自动归并，启用清单为四表；6 个不确定项保留 |
+| 历史预置位基线 | 首轮、连续三轮、去重后复验共五轮，20/20 次逐表采集、40 次新图身份检查通过，独立保留 |
+| 周期调度与有限批次 | TX2 原生五轮上限：20/20 次采集、40 次新图身份与质量检查通过；6 张模糊图补拍恢复；到上限自动停止，65 秒无第六轮 |
+| 超分对照 | 同 ROI 原图、双三次和 Real-ESRGAN 对照未增加正确检出，成本增加，未接入主流程 |
+| 工程检查 | TX2 控制台 234 项通过；PC 标准库 471 项（470 通过、1 平台跳过），含有限批次、STOP 和重启暂停；C++ 运行时 ARM64 重编译与非空 ROI 输出核对通过 |
+
+这些结果来自同一固定四表场景。三块表受俯仰下限影响仍偏离中心，其中一块有前景遮挡；身份检查通过不代表数值可读或精确居中。新环境发现率、跨天可靠性及长期实机周期运行尚未验收。初始化、去重修订和有限周期结果见[本轮复验](docs/INITIALIZATION_VALIDATION_2026-10-24.md)，此前成功与失败记录保留。
+
+## 流程
+
+```mermaid
+flowchart TD
+    A[网页启动原分辨率扫描] --> B[TX2 本地环视预览、候选发现与分组]
+    B --> R[全景默认保留：排除误检、画框补漏]
+    R --> C[TX2 自动建档队列]
+    D[网页补画漏检框] --> C
+    C --> E[粗定位、有限补拍、构图和择优]
+    E --> F[离开后独立回访、模型复检和身份去重]
+    F --> G[保存软件预置位与新参考]
+    G --> H[最近邻排序、逐表抓图和身份核对]
+    H --> I[网页照片与审计记录]
+    H --> J[可选固定延迟周期]
+    K[RTSP 最新帧] --> L[网页实时监看]
+```
+
+环视图是带未标定假设的角度辅助预览，不能代替精确 PTZ 标定。新入口把扫描、检测和建档接到 TX2 网页；启动服务本身不自动扫描、不启用周期。安装或仪表位置改变后需重建场景；固定机位允许云台正常转动和变焦。操作与有限候选批次边界见[场景初始化](docs/SCENE_INITIALIZATION.md)。
+
+## 普通电脑先运行
+
+建议 Python 3.11 或 3.12；离线状态机检查和审核服务仅需要标准库：
 
 ```bash
 git clone https://github.com/moonnnei/jetson-ptz-inspection.git
@@ -33,96 +67,53 @@ python scripts/check_release.py --verify-manifest
 python src/inspection_console/server.py --port 8775
 ```
 
-浏览器访问 `http://127.0.0.1:8775/`。首次运行没有现场数据，页面会提示导入。按[审核控制台说明](docs/REVIEW_CONSOLE.md)准备自己的 PNG/JPEG 和 JSON 清单：
+访问 `http://127.0.0.1:8775/`。默认 `NoHardware`，不会连接相机。新仓库没有现场照片，按[审核控制台](docs/REVIEW_CONSOLE.md)准备自己的来源图和导入清单：
 
 ```bash
 python scripts/import_review.py var/private-import/manifest.json
 ```
 
-数据库、原图和日志保存在被 Git 忽略的 `var/` 中。审核页面可确认、排除、恢复、补框、修正框及合并重复观测；仪表编号与操作记录在刷新和服务重启后保留。默认不启用物理周期巡检。
+数据库、来源图、任务图像和日志保存在忽略的 `var/`。补框和图像来源使用修订号及哈希绑定，已开始的动作不能通过重放旧计划再次执行。
 
-## 系统分工
+## TX2 部署
 
-![相机、TX2和开发电脑的连接拓扑](docs/assets/topology.png)
+实测设备为 Jetson TX2、Ubuntu 16.04.7 / L4T R28.3.1、Python 3.5 与海康 DS-2DC2402IW-DE3 S6。控制端使用 Python 3.5 标准库，图像子进程使用板端 Python 2.7 / OpenCV 3.3.1。不要替换系统 Python。
 
-```mermaid
-flowchart TD
-    A[海康云台相机] -->|RTSP / 高清抓图| B[TX2 采集与有限扫描]
-    B --> C[原图、拍摄姿态与哈希]
-    C --> D[PC 配准、全景预览与候选检测]
-    D --> E[TX2 或 PC 审核控制台]
-    E --> F[人工确认清单与回访参考]
-    F -.待完成实机接入.-> G[逐表回访、居中、变焦与质量检查]
-    G -.-> H[周期留图与读数算法]
-```
+本轮仪表模型为自行训练的单类 YOLO11n，固定 640 输入、NCNN CPU FP32。RTSP 硬件解码与模型推理是两个环节，本工程没有将模型配置为 TensorRT、CUDA 或 Vulkan 推理。实时监看取 RTSP 最新帧；正式巡检在停稳后调用高清抓图接口，保存新的 2560×1440 图像。
 
-图中的后续实机流程是开发目标。已有运动控制代码和人体演示结果可作为基础，不能直接当作真实仪表闭环的验收依据。详细数据流与坐标约定见[系统架构](docs/ARCHITECTURE.md)。
+仪表权重由使用者提供，C++ 推理源码、PC 导出工具和当前控制适配器见[软件预置位部署说明](docs/SOFTWARE_PRESET_PATROL.md)。显式启用硬件后，网页单轮入口或已启用的周期会转动相机；同一相机通过共享运动锁串行使用。
 
-## 当前能力与验证边界
-
-| 能力 | 已有依据与限制 |
-| --- | --- |
-| RTSP 采集、硬解、最新帧及同帧检测预览 | 已在 TX2 运行；模型后端为 NCNN CPU |
-| 人体替代仪表的固定目标巡检 | 一轮首次标定与完整采集成功，47.724 秒；未统计重复成功率 |
-| 有限扫描与原分辨率留图 | 已完成三视点和一次 19 视点环视实拍，来源图为 2560×1440 |
-| 环视预览 | 4096×600 角度辅助投影；自动球面拼接失败，仍有接缝，未验证完整无缝覆盖 |
-| 全景候选与高清来源关联 | 重叠分块、跨接缝框、近似几何和外观核对；供人工复审，不是 PTZ 几何标定 |
-| 人工审核与稳定仪表编号 | 已实现并持久化；历史两块真实仪表已经确认 |
-| 回访参考检查 | 保存图上两表共 4 次定位通过；当前外观不符时拒绝匹配；不等于实机回访 |
-| 真实仪表逐表回访、清晰度验收、物理周期执行和读数 | 待接入或待实机验证 |
-
-最近的全景实验得到 3 条背景误检，没有自动加入正式仪表清单。首次 24 次 PC 前向之后，来源关联修正仅追加 3 次来源复检；错误结果及修正过程见[全景复审记录](docs/PANORAMA_REVIEW_2026-10-21.md)。人工复审能排除误检，漏检仍需补框或改进模型与成像。
-
-## 在 TX2 上运行运动 Demo
-
-先按[部署手册](docs/DEPLOYMENT.md)准备依赖。已验证设备为 Jetson TX2、Ubuntu 16.04.7 / L4T R28.3.1、Python 3.5 与海康 DS-2DC2402IW-DE3 S6。
-
-```bash
-python3 scripts/fetch_ncnn.py
-bash scripts/build_tx2.sh
-cp config/inspection.example.json config/inspection.local.json
-# 按设备修改相机地址、用户名、RTSP端口、图像方向与路径
-bash scripts/run_inspection_demo.sh --config config/inspection.local.json
-```
-
-相机密码在终端交互输入，浏览器访问 `http://TX2的IP:8772/`。页面主动开始巡检后会转动相机，启动默认观察并请求 STOP；具体动作范围见[操作手册](docs/INSPECTION_DEMO.md)。同一相机只运行一个运动控制服务。
-
-Demo 使用随仓库提供的 YOLO26n 转换模型、FP32、320×320、NCNN CPU 推理，没有使用 TensorRT/CUDA/Vulkan 执行该模型。视频硬解与模型 GPU 推理属于不同环节。当前 Demo 留存 960×540 预览，和新扫描模块的高清原图分别记录。
-
-公开配置中的端口、旋转方向和 CPU 绑定来自实验设备，其他设备需核对。不要替换系统 Python；电脑侧导出或建图环境与旧 TX2 环境分开安装。
+历史 `v0.5.0-demo` 保留人体替代仪表的运动演示，使用仓库随附 YOLO26n 320 NCNN 模型，其入口见[旧 Demo 手册](docs/INSPECTION_DEMO.md)。它与当前真实仪表建档流程分别记录，独立人员跟随仍有明显滞后。
 
 ## 工程目录
 
-```text
-src/inspection_console/ 场景审核、仪表档案、扫描规划、回访参考与测试
-src/inspection_demo/    人体替代仪表的巡检控制、实机适配及网页
-src/person_tracker/     共享采集/检测/ISAPI，以及独立人员跟随实验
-src/image_infer/        C++ 通用物体单图推理
-tools/scene_mapping/    PC 配准、环视投影、候选发现与来源复核
-tools/model_export/    PC 模型导出及一致性检查
-models/yolo26n/         通用转换模型、来源、契约及哈希
-scripts/               构建、导入、运行、测试及发布检查
-config/                无密码配置示例
-docs/                  架构、操作、接口、实验和开发路线
-third_party/licenses/  第三方许可证
-legacy/                历史 CSI / YOLOv3-tiny 脚本
-```
+| 目录 | 内容 |
+| --- | --- |
+| `src/inspection_console/` | 场景档案、自动建档、去重、软件预置位巡检、调度器及测试 |
+| `src/meter_runtime/` | 单类 YOLO11n NCNN C++ 推理程序与独立 CMake 入口 |
+| `src/inspection_demo/` | 历史人体替代仪表的巡检演示 |
+| `src/person_tracker/` | 共享 RTSP、ISAPI、通用检测与独立跟随实验 |
+| `tools/scene_mapping/` | 配准、环视投影、候选发现和来源/新图匹配；板端兼容图像子进程 |
+| `tools/model_export/` | 可信本地权重加载、PC 导出与一致性检查 |
+| `models/yolo26n/` | 历史通用转换模型、来源、契约和哈希 |
+| `scripts/`, `config/`, `docs/` | 构建/检查/导入、无密码示例、操作与实验记录 |
 
-## 实验与贡献
+## 文档与实验
 
-- [固定目标运动实机复验](docs/INSPECTION_DEMO_VALIDATION_2026-10-15.md)
-- [三视点仪表建图](docs/SCENE_MAPPING_VALIDATION_2026-10-20.md)
-- [19 视点环视采集与拼接失败记录](docs/RING_SCAN_2026-10-21.md)
-- [全景候选、误关联修正与网页复审](docs/PANORAMA_REVIEW_2026-10-21.md)
-- [回访参考及失败拒绝](docs/REVISIT_REFERENCE.md)
-- [检查记录](CHECKS.md)、[变更记录](CHANGELOG.md)、[待完成与验收标准](docs/ROADMAP.md)
+- [标注驱动建档：控制、自动复检、去重和实机结果](docs/AUTOMATIC_REGISTRATION.md)
+- [TX2 网页初始化、单命令启动与基本图像质量检查](docs/SCENE_INITIALIZATION.md)
+- [软件预置位：逐表采集、周期与迁移回退](docs/SOFTWARE_PRESET_PATROL.md)
+- [超分实验：原图/普通放大/超分的成对比较](docs/SUPER_RESOLUTION_ASSESSMENT.md)
+- [架构与数据约定](docs/ARCHITECTURE.md)、[大图补框](docs/OVERVIEW_REVIEW.md)、[实时监看](docs/LIVE_PREVIEW.md)
+- [19 视点扫描及拼接失败记录](docs/RING_SCAN_2026-10-21.md)、[较早首次采图失败](docs/FIRST_CAPTURE.md)、[较早局部回访修订](docs/FIXED_POSE_REVISIT.md)
+- [检查记录](CHECKS.md)、[变更记录](CHANGELOG.md)、[开发路线与限制](docs/ROADMAP.md)
 
-GitHub Actions 在 Linux/Windows 运行标准库回归、模型哈希、公开清单审计和无需模型下载的 OpenCV 场景检查，不访问相机，也不替代 ARM64 编译和机械验收。本地场景检查按[工具说明](tools/scene_mapping/README.md)运行。
+GitHub Actions 的离线检查不连接相机，不替代 ARM64 编译或现场验收。网页逻辑检查也不等同于浏览器渲染验收。新的仪表 CMake 入口已在 TX2 上完成独立构建，原运行二进制保留；仪表导出工具已验证本地检查点前向，本轮未重新导出模型。
 
-贡献方式与公开文件登记见 [CONTRIBUTING.md](CONTRIBUTING.md)，设备和凭据处理见 [SECURITY.md](SECURITY.md)，更新上传见[发布说明](docs/PUBLISHING.md)。
+贡献及公开清单维护见[贡献说明](CONTRIBUTING.md)，上传流程见[发布步骤](docs/PUBLISHING.md)。
 
-## 许可证与模型
+## 许可证与数据
 
-原创代码和文档采用 [AGPL-3.0](LICENSE)，第三方组件保留各自许可与来源，见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。通用转换模型派生自 Ultralytics 权重；本工程不宣称原模型架构的原创权。
+原创代码和文档使用 [AGPL-3.0](LICENSE)；第三方来源及各自许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。不声明拥有 YOLO、NCNN 或 OpenCV 的原创权。
 
-表盘训练集、训练得到的 `best.pt`、现场图片/视频、数据库、设备日志和真实凭据不包含在公开仓库中。接入自己的仪表模型时，请使用可信本地权重并遵守其来源许可；模型接口见[模型说明](models/README.md)。
+仪表训练集、本地 `best.pt`、现场照片/视频、数据库、日志和真实凭据不随公开仓库提供。超分权重仅用于独立 PC 实验，未打包进主流程。模型来源与接口见[模型说明](models/README.md)。

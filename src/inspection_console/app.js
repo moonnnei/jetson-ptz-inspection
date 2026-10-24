@@ -1,9 +1,15 @@
 'use strict';
 const $ = id => document.getElementById(id);
 const token = document.querySelector('meta[name="control-token"]').content;
-const labels = {pending:'待审核',confirmed:'已确认',rejected:'已排除',merged:'已合并'};
+const labels = {pending:'待审核',confirmed:'已确认',rejected:'已排除',merged:'已合并',
+  human_labeled:'人工补漏',automatic_proposal:'自动复检中',auto_verified:'自动已确认',auto_uncertain:'本次不确定',auto_duplicate:'重复候选'};
+const acceptedStates=['confirmed','human_labeled','auto_verified'];
+const excludedStates=['rejected','merged','auto_uncertain','auto_duplicate'];
 const actionLabels = {import_map:'导入场景',review_confirm:'确认仪表',review_reject:'排除候选',review_restore:'恢复待审核',review_merge:'合并重复候选',review_bbox:'修正检测框',candidate_add:'人工补框',instrument_update:'更新仪表',map_invalidated:'场景失效',schedule_configure:'保存巡检配置',schedule_stop:'暂停巡检',schedule_arm:'启用巡检',restart_recovery:'重启恢复'};
 let state = null, mapId = null, frameId = null, selectedId = null;
+let sceneStorage=null;
+try{sceneStorage=window.localStorage;}catch(_){}
+const sceneSelection=window.ResultGalleryModel.sceneSelection(sceneStorage);
 let drawMode = null, drawStart = null, drawRect = null, busy = false, toastTimer;
 const imageCache = new Map();
 function el(tag, text, cls) {
@@ -26,10 +32,14 @@ function toast(message, error = false) {
 }
 async function request(path, data) {
   const options = data === undefined ? {} : {method:'POST',headers:{'Content-Type':'application/json','X-Control-Token':token},body:JSON.stringify(data)};
-  const response = await fetch(path, options);
-  const body = await response.json();
-  if (!response.ok) throw new Error(response.status === 409 ? '数据已更新或任务正在执行，请刷新后重试。' : body.error || '请求失败');
-  return body;
+  const controller=new AbortController(),deadline=setTimeout(()=>controller.abort(),path.includes('/stop')?18000:10000);
+  try{
+    const response=await fetch(path,{...options,signal:controller.signal,cache:'no-store'});
+    const body=await response.json();
+    if(!response.ok){const error=new Error(body.error||'请求失败');error.status=response.status;throw error;}
+    return body;
+  }catch(error){if(error.name==='AbortError')throw Error('请求超时，已恢复操作；可以重试或点击停止。');throw error;}
+  finally{clearTimeout(deadline);}
 }
 async function act(path, data, message, selectResult = false) {
   if (busy) return;
@@ -47,10 +57,11 @@ async function act(path, data, message, selectResult = false) {
   } finally {
     busy = false;
     document.body.removeAttribute('aria-busy');
+    if(typeof Workbench!=='undefined')Workbench.update(state);
   }
 }
-function map() {return state.maps.find(item => item.id === mapId);}
-function frame() {return state.frames.find(item => item.id === frameId);}
+function map() {return state?.maps.find(item => item.id === mapId);}
+function frame() {return state?.frames.find(item => item.id === frameId);}
 function candidates() {return state.candidates.filter(item => item.map_id === mapId);}
 function reviewCandidates() {return candidates().filter(c=>!map()?.panorama_detection||!$('panorama-only').checked||c.panorama_observations?.length||c.source.startsWith('human_'));}
 function selected() {return state.candidates.find(item => item.id === selectedId);}
@@ -70,28 +81,37 @@ function selectCandidate(item) {
   renderReview();
 }
 function setTab(name) {
-  const titles = {review:'场景与候选',assets:'仪表清单',plan:'巡检计划',history:'记录与追溯'};
+  const titles = {review:'仪表巡检工作台',assets:'仪表清单',plan:'巡检计划',history:'记录与追溯'};
   Object.keys(titles).forEach(key => {
     $(key + '-panel').hidden = key !== name || !mapId;
     document.querySelector('[data-tab="' + key + '"]').classList.toggle('active',key===name);
   });
-  $('page-title').textContent = titles[name];
+  $('page-title').textContent = document.body.dataset.workspace==='dashboard'?'仪表采集看板':titles[name];
   document.body.dataset.tab = name;
 }
 async function load(force = false) {
   const fresh = await request('/api/state');
   const changed = !state || state.revision !== fresh.revision;
   state = fresh;
+  const previousMap=mapId,preferred=typeof Initialization!=='undefined'?Initialization.preferredMap(state):null;
+  mapId=sceneSelection.resolve(state.maps,mapId,preferred);
+  const sceneChanged=previousMap!==mapId;
+  if(sceneChanged){frameId=null;selectedId=null;}
+  if(typeof Initialization!=='undefined'){
+    Initialization.update(state);
+  }
   if(changed)$('reference-result').hidden=true;
-  $('connection').textContent = '已保存 · 修订 ' + state.revision + ' · 审核模式';
-  if (!changed && !force) return;
-  if (!state.maps.some(item => item.id === mapId)) mapId = state.maps.length ? state.maps[state.maps.length - 1].id : null;
+  $('connection').textContent = '已保存 · 修订 ' + state.revision + (state.runtime.mode==='software_preset_capture'?' · 回访采集已连接':' · 审核模式');
+  if(typeof Workbench!=='undefined')Workbench.update(state);
+  if (!changed && !force && !sceneChanged) {renderSchedule();if(typeof FirstCapture!=='undefined')FirstCapture.update(state,mapId,frame()?.pose);window.InspectionResults?.render(state,mapId);return;}
   if (!state.frames.some(item => item.id === frameId && item.map_id === mapId)) frameId = reviewCandidates()[0]?.frame_id || state.frames.find(item => item.map_id === mapId)?.id || null;
   if (!reviewCandidates().some(item => item.id === selectedId)) selectedId = reviewCandidates().find(item => item.frame_id === frameId)?.id || null;
   $('map-select').replaceChildren();
-  state.maps.forEach(item => option($('map-select'), item.id, item.title));
+  window.ResultGalleryModel.scenes(state).slice().reverse().forEach(item=>option($('map-select'),item.id,item.label));
   $('map-select').value = mapId || '';
+  $('scene-archive-note').textContent='已保存 '+state.maps.length+' 个独立场景。新建场景不会覆盖旧场景；切换此处可找回原全景、仪表名称与采集记录。切换只浏览资料，不转动相机或启用巡检。';
   $('empty').hidden = !!mapId;
+  if(mapId&&!map()?.overview)$('source-details').open=true;
   $('map-status').textContent = map()?.status === 'invalidated' ? '场景已失效' : map()?.provenance==='bounded_scan_capture' ? '有限扫描视图 · 待回访验证' : '历史图像 · 待回访验证';
   $('provenance-note').textContent = map()?.provenance==='bounded_scan_capture' ? '当前是有限扫描的原始视图索引；尚未拼接为全景，裁剪图不代表逐表居中或放大采集。拍摄时间为电脑收到图片的时间。' : '当前展示历史现场图像及已有模型候选。裁剪预览来自同一张原图，不代表已完成云台放大采集或全景拼接。';
   if(map()?.overview)$('provenance-note').textContent=map().overview.source_mapping?'点击全景候选查看高清来源图并人工复审。确认后还需为每块仪表建立采集位置，才能定期回访；全景中的位置关联为近似结果。':'总览由来源视图配准生成，仅用于位置浏览；检测框与补框均保存在高清来源图中。裁剪预览不代表逐表放大拍摄。';
@@ -101,12 +121,16 @@ async function load(force = false) {
   renderAssets();
   renderSchedule();
   renderHistory();
+  window.InspectionResults?.render(state,mapId);
+  if(typeof Workbench!=='undefined')Workbench.update(state);
+  if(typeof FirstCapture!=='undefined')FirstCapture.update(state,mapId,frame()?.pose);
 }
 function renderReview() {
   if (!frame()) return;
   renderOverview();
+  if(typeof Workbench!=='undefined'&&!document.body.classList.contains('advanced-mode')&&!drawMode)return;
   const items = candidates();
-  const counts = [ ['全部候选',items.length,''], ['待审核',items.filter(i=>i.state==='pending').length,''], ['已确认',items.filter(i=>i.state==='confirmed').length,'green'], ['排除 / 合并',items.filter(i=>['rejected','merged'].includes(i.state)).length,''] ];
+  const counts = [ ['全部候选',items.length,''], ['待处理',items.filter(i=>i.state==='pending'||i.state==='automatic_proposal').length,''], ['已登记',items.filter(i=>acceptedStates.includes(i.state)).length,'green'], ['排除 / 合并',items.filter(i=>excludedStates.includes(i.state)).length,''] ];
   $('stats').replaceChildren();
   counts.forEach(([label,count,cls])=>{const box=el('div',null,'stat '+cls);box.append(el('span',label),el('strong',count));$('stats').append(box);});
   $('frame-select').replaceChildren();
@@ -120,7 +144,7 @@ function renderReview() {
   const scene = $('scene');
   scene.setAttribute('viewBox','0 0 '+f.width+' '+f.height);
   scene.replaceChildren(svgEl('image',{href:'/images/'+f.image,width:f.width,height:f.height}));
-  const visible = reviewCandidates().filter(item=>item.frame_id===frameId && ($('show-rejected').checked || !['rejected','merged'].includes(item.state)));
+  const visible = reviewCandidates().filter(item=>item.frame_id===frameId && ($('show-rejected').checked || !excludedStates.includes(item.state)));
   visible.forEach(item => {
     const b = item.bbox;
     const rect = svgEl('rect',{x:b[0],y:b[1],width:b[2]-b[0],height:b[3]-b[1],class:'target '+item.state+(item.id===selectedId?' selected':''),tabindex:'0','aria-label':candidateName(item)+' '+labels[item.state]});
@@ -137,36 +161,42 @@ function renderReview() {
   renderDetail();
   const invalid = map().status === 'invalidated';
   $('draw-add').disabled = invalid;
-  $('draw-edit').disabled = invalid || !selected() || selected().state==='merged';
+  $('draw-edit').disabled = invalid || state.capabilities?.automatic_registration || !selected() || selected().state==='merged';
 }
 function renderOverview() {
+  if(window.PanoramaWorkbench&&!document.body.classList.contains('advanced-mode')){window.PanoramaWorkbench.render();return;}
   const summary=map()?.overview;
   $('overview-card').hidden=!summary;
   if(!summary)return;
   const ring=Boolean(summary.source_mapping),mapped=summary.source_mapping==='estimated_cylindrical_review';
-  $('overview-title').textContent=ring?'环视扫描总览':'局部全景总览';
-  $('overview-hint').textContent=mapped?'点击候选，在下方高清原图中确认、排除或修正。虚线框的位置来自近似关联；点击只切换图像。':'请切换下方来源视图审核高清原图；总览与完整覆盖、云台回访标定需要分别核对。';
+  $('overview-title').textContent=ring?'环视大图审核':'全景大图审核';
+  $('overview-hint').textContent=state.capabilities?.automatic_registration?'滚轮放大、拖动平移；发现遗漏时使用“补充漏检”框选，系统自动完成后续建档。':'滚轮放大、拖动平移；点击候选直接审核，按 Ctrl / Shift 多选，或使用框选多个。补框需核对高清来源。虚线为近似关联，图像选择不驱动相机。';
   const ringLabel=summary.kind==='pose_projected_ring_preview'?'按角度投影的环视预览 · '+summary.projected_views+' 张原图':summary.kind==='stitched_ring_preview'?'环视拼接预览 · '+summary.stitched_views+' / '+summary.total_views+' 个视图拼入':'来源视图索引 · '+summary.total_views+' 张原图';
   $('overview-status').textContent=ring?ringLabel+' · '+summary.width+' × '+summary.height+' px'+(mapped?' · 候选待人工复审':'；请在来源视图中审核'):summary.registered_views+' / '+summary.total_views+' 个视图已配准 · '+summary.width+' × '+summary.height+' px 总览';
   const canvas=$('overview');canvas.replaceChildren();
   canvas.setAttribute('viewBox','0 0 '+summary.width+' '+summary.height);
   canvas.append(svgEl('image',{href:'/images/'+summary.image,width:summary.width,height:summary.height}));
   const warp=(h,x,y)=>{const d=h[2][0]*x+h[2][1]*y+h[2][2];return [(h[0][0]*x+h[0][1]*y+h[0][2])/d,(h[1][0]*x+h[1][1]*y+h[1][2])/d];};
-  reviewCandidates().filter(c=>$('show-rejected').checked||!['rejected','merged'].includes(c.state)).forEach(item=>{
+  const overviewItems=typeof OverviewReview!=='undefined'?OverviewReview.items():candidates().filter(c=>!['rejected','merged'].includes(c.state));
+  overviewItems.forEach(item=>{
     const f=state.frames.find(f=>f.id===item.frame_id),h=f?.to_overview;
     const [x,y,r,b]=item.bbox;
     const shapes=h?[[[x,y],[r,y],[r,b],[x,b]].map(p=>warp(h,...p))]:(item.overview_boxes||[]).map(([l,t,r,b])=>[[l,t],[r,t],[r,b],[l,b]]);
     shapes.forEach(points=>{
-      const polygon=svgEl('polygon',{points:points.map(p=>p.join(',')).join(' '),class:'overview-target '+item.state+(!h?' estimated':'')+(item.id===selectedId?' selected':''),tabindex:0,role:'button','aria-label':'查看高清原图 '+candidateName(item)});
-      polygon.addEventListener('click',()=>selectCandidate(item));
-      polygon.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();selectCandidate(item);}});
+      const chosen=typeof OverviewReview!=='undefined'?OverviewReview.has(item.id):item.id===selectedId;
+      const polygon=svgEl('polygon',{points:points.map(p=>p.join(',')).join(' '),class:'overview-target '+item.state+(!h?' estimated':'')+(chosen?' selected':''),tabindex:0,role:'button','aria-label':candidateName(item)+' '+labels[item.state]+(item.instrument_id?' '+item.instrument_id:'')});
+      polygon.dataset.candidateId=item.id;
+      polygon.addEventListener('click',event=>{if(typeof OverviewReview!=='undefined')OverviewReview.pick(item,event);else selectCandidate(item);});
+      polygon.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();if(typeof OverviewReview!=='undefined')OverviewReview.pick(item,event);else selectCandidate(item);}});
       canvas.append(polygon);
+      const label=svgEl('text',{x:points[0][0],y:Math.min(...points.map(p=>p[1]))-5,class:'overview-label'});label.textContent=item.instrument_id||candidateName(item);canvas.append(label);
     });
   });
+  if(typeof OverviewReview!=='undefined')OverviewReview.sync();
 }
 function thumbnail(item) {
   const canvas=el('canvas');canvas.width=440;canvas.height=250;
-  canvas.setAttribute('aria-label',candidateName(item)+' 原图裁剪预览');
+  canvas.setAttribute('aria-label',(item.id?candidateName(item):'待补框高清局部')+' 原图裁剪预览');
   const f=state.frames.find(x=>x.id===item.frame_id);
   const draw=img=>{
     const ctx=canvas.getContext('2d');const b=item.bbox;
@@ -189,6 +219,7 @@ function renderCandidate(item) {
   const confidence=item.confidence===null?'人工补框':(item.confidence*100).toFixed(1)+'% 检测分数';
   box.append(el('div',confidence+' · 同帧原图裁剪','meta'));
   const actions=el('div',null,'actions');
+  if(state.capabilities?.automatic_registration){box.append(actions);$('candidates').append(box);return;}
   if(['rejected','merged'].includes(item.state)) actions.append(button('恢复待审核',()=>review(item,'restore')));
   else {
     if(item.state!=='confirmed')actions.append(button('确认为仪表',()=>review(item,'confirm'),'confirm'));
@@ -206,6 +237,11 @@ function renderDetail() {
   if(!item){panel.append(el('p','选择一个候选，或在原图中手动补框。'));return;}
   const asset=state.instruments.find(a=>a.id===item.instrument_id);
   panel.append(el('p',candidateName(item)+' · '+labels[item.state]+' · '+item.bbox.map(v=>Math.round(v)).join(', ')+' px'));
+  if(state.capabilities?.automatic_registration){
+    panel.append(el('p','系统自动复检和建立回访位置；有遗漏时，在大图使用“补充漏检”圈出。'));
+    if(asset)panel.append(el('p',asset.id+' · '+(asset.pose_status==='verified'?'回访位置已验证':'等待自动建立回访位置')));
+    return;
+  }
   const observation=item.panorama_observations?.at(-1);
   if(observation)panel.append(el('p','全景检测 '+(observation.panorama_confidence*100).toFixed(1)+'%'+(observation.source_confidence===null?' · 高清复检未匹配':' · 高清复检 '+(observation.source_confidence*100).toFixed(1)+'%')+'。检测分数不能替代人工确认。','footnote'));
   if(observation)panel.append(el('p',observation.source_association==='appearance_consistent'?'来源图外观一致性通过；仍需人工核对是否为同一块仪表。':'来源图仅按近似几何位置关联，外观尚未确认。','footnote'));
@@ -236,12 +272,14 @@ function renderAssets() {
   assets.forEach(asset=>{
     const candidate=state.candidates.find(c=>c.id===asset.candidate_id),row=el('tr');
     const enabled=el('input');enabled.type='checkbox';enabled.checked=asset.enabled;enabled.setAttribute('aria-label','采集 '+asset.id);
-    enabled.disabled=candidate.state!=='confirmed'||map().status==='invalidated';
+    enabled.disabled=!acceptedStates.includes(candidate.state)||map().status==='invalidated'||state.capabilities?.automatic_registration;
     const name=el('input');name.type='text';name.value=asset.name;name.maxLength=100;name.setAttribute('aria-label',asset.id+' 名称');
+    name.readOnly=Boolean(state.capabilities?.automatic_registration);
     const cell=el('td');cell.append(enabled);row.append(cell,el('td',asset.id));const nc=el('td');nc.append(name);row.append(nc);
-    row.append(el('td',labels[candidate.state]),el('td',asset.pose_status==='verified'?'已标定':asset.pose_status==='invalidated'?'场景已失效':'待标定','asset-state'));
+    const poseLabel=asset.pose_status==='verified'?'回访已验证':asset.pose_status==='automatic_duplicate'?'重复归档 → '+asset.duplicate_of:asset.pose_status==='uncertain'?'本次不确定':asset.pose_status==='invalidated'?'场景已失效':'待建立回访位置';
+    row.append(el('td',labels[candidate.state]),el('td',poseLabel,'asset-state'));
     const actions=el('td');const save=button('保存',()=>act('/api/instruments/update',{id:asset.id,name:name.value,enabled:enabled.checked},'仪表清单已保存'));
-    save.disabled=map().status==='invalidated';actions.append(save);row.append(actions);body.append(row);
+    save.disabled=map().status==='invalidated'||state.capabilities?.automatic_registration;actions.append(save);row.append(actions);body.append(row);
   });
   table.append(body);wrap.append(table);root.append(wrap);
   $('invalidate').disabled=map()?.status==='invalidated';
@@ -249,19 +287,100 @@ function renderAssets() {
 function renderSchedule() {
   const schedule=state.schedule;
   if(document.activeElement!==$('interval'))$('interval').value=schedule.interval_seconds;
+  if(document.activeElement!==$('round-limit'))$('round-limit').value=schedule.round_limit??'';
   const selectedAssets=state.instruments.filter(a=>a.map_id===mapId&&a.enabled);
-  $('schedule-status').replaceChildren(el('strong',schedule.enabled?'巡检已启用':'巡检未启用'));
+  const ready=Boolean(selectedAssets.length)&&selectedAssets.every(a=>a.pose_status==='verified'&&a.visit_pose);
+  const connected=state.runtime.mode==='software_preset_capture'&&state.runtime.hardware_ready;
+  const registration=state.automatic_registration||{};
+  const registering=registration.active||(registration.queued>0&&!registration.paused)||Boolean(state.scene_initialization?.active);
+  const automatic=Boolean(state.capabilities?.automatic_registration);
+  if(automatic){
+    document.querySelector('.sidebar-bottom small').textContent='环视发现 → 自动建档 → 周期采集';
+    const steps=document.querySelectorAll('.workflow span');
+    ['1　环视建图','2　自动复检 / 补漏','3　建立回访位置','4　周期巡检'].forEach((text,i)=>{if(steps[i])steps[i].textContent=text;});
+  }
+  $('annotation-card').hidden=!automatic;
+  $('first-prepare').closest('article').hidden=automatic;
+  $('annotation-discover').disabled=!registration.automatic_model_recheck||registering||Boolean(state.runtime.active_job);
+  $('annotation-resume').disabled=!automatic||!registration.paused||!registration.queued;
+  $('annotation-status').replaceChildren(el('strong',registration.active?'正在自动建档':registration.paused?'自动建档已暂停':'自动建档待命'),
+    el('p','等待 '+(registration.queued||0)+' 项；本次不确定 '+(registration.uncertain||0)+' 项；已去重 '+(registration.duplicates||0)+' 项。'));
+  if(registration.outcome?.instrument_id)$('annotation-status').append(el('p','最近处理：'+registration.outcome.instrument_id+' · '+registration.outcome.status));
+  $('schedule-status').replaceChildren(el('strong',schedule.enabled?'巡检已启用':schedule.state==='batch_completed'?'本批次已完成，已自动停止':'巡检未启用'));
   $('schedule-status').append(el('div','已选 '+selectedAssets.length+' 块仪表；间隔 '+schedule.interval_seconds+' 秒。'));
-  $('schedule-status').append(el('div','当前阻碍：尚未接入实机采集，需完成场景定位与仪表回访标定。'));
+  if(schedule.batch_id||schedule.round_limit!=null)$('schedule-status').append(el('div','本批已完成 '+(schedule.completed_rounds||0)+' / '+(schedule.round_limit??'不限')+' 轮。'));
+  $('schedule-status').append(el('div',connected?(ready?'软件预置位已就绪，可自动逐表采集。':'部分仪表尚未建立可回访位置。'):'实机采集尚未连接。'));
   if(schedule.map_id && schedule.map_id!==mapId)$('schedule-status').append(el('div','已保存配置属于另一个场景；保存后将切换到当前场景。'));
-  $('arm').disabled=!state.runtime.hardware_ready||map()?.status==='invalidated';
+  $('arm').disabled=!connected||!ready||registering||registration.stop_error||schedule.enabled||schedule.map_id!==mapId||Boolean(state.runtime.active_job)||map()?.status==='invalidated';
+  $('run-once').disabled=!connected||!ready||registering||registration.stop_error||schedule.enabled||Boolean(state.runtime.active_job)||map()?.status==='invalidated';
   $('reference-plan').disabled=!mapId||map()?.status==='invalidated';
 }
 function renderHistory() {
   $('jobs').replaceChildren();
   const jobs=state.jobs.filter(j=>j.map_id===mapId).slice().reverse();
   if(!jobs.length)$('jobs').append(el('p','尚未执行本流程的实机巡检。历史原图不会计入本轮采集记录。'));
-  jobs.forEach(job=>{const box=el('div',null,'job');box.append(el('strong',job.id+' · '+job.status),el('p',stamp(job.started_at)+' · '+job.mode));job.results.forEach(r=>box.append(el('p',r.instrument_id+' · '+r.status+' · '+stamp(r.captured_at))));$('jobs').append(box);});
+  jobs.forEach(job=>{
+    const box=el('div',null,'job');
+    box.append(el('strong',job.id+' · '+job.status),el('p',stamp(job.started_at)+' · '+job.mode));
+    if(job.series_id)box.append(el('p','重复回访验证 · 第 '+job.series_round_index+' / '+job.series_planned_rounds+' 轮'));
+    if(Number.isFinite(job.elapsed_seconds))box.append(el('p','本轮执行 '+job.elapsed_seconds.toFixed(1)+' 秒'));
+    if(job.schedule_batch_id)box.append(el('p','周期批次第 '+job.schedule_round_index+' / '+(job.schedule_round_limit??'不限')+' 轮'));
+    if(job.metrics){
+      const m=job.metrics;
+      box.append(el('p','成功留图 '+m.captured+' / '+m.targets+' 块仪表'));
+      if(Number.isFinite(m.fresh_capture_requests))box.append(el('p','本轮新拍 '+m.fresh_capture_requests+' 张；质量拒绝 '+m.quality_rejections+' 张；通过观测 '+m.quality_passes+' 次。'));
+    }
+    if(job.series_summary){
+      const summary=job.series_summary;
+      box.append(el('p','本组完成 '+summary.completed_rounds+' / '+summary.planned_rounds+' 轮 · '+summary.fresh_capture_requests+' 次新图请求。'));
+      box.append(el('p','此处统计固定场景重复回访，不代表精准居中或读数质量已验收。','footnote'));
+    }
+    if(job.error)box.append(el('p',job.error));
+    job.results.forEach(r=>{
+      box.append(el('p',r.instrument_id+' · '+r.status+' · '+stamp(r.captured_at)));
+      if(r.image_status==='failure_diagnostic_not_accepted_inspection_capture'){
+        box.append(el('p','失败诊断图：尚未完成居中、变焦或回访验收。','footnote'));
+        if(r.center_error)box.append(el('p','中心偏差（画面宽/高）：'+r.center_error.map(v=>(100*v).toFixed(1)+'%').join(' / ')));
+      }
+      if(r.image_status==='constrained_capture_not_verified_visit'){
+        box.append(el('p','受限留图：已核对表盘外观，未完成精确居中或独立回访验收。','footnote'));
+        if(r.optical_zoom)box.append(el('p','采集倍率：'+r.optical_zoom+' 倍'));
+        if(r.center_error)box.append(el('p','中心偏差（画面宽/高）：'+r.center_error.map(v=>(100*v).toFixed(1)+'%').join(' / ')));
+      }
+      if(r.image_status==='fixed_angle_photo_pending_manual_review'){
+        box.append(el('p','待人工复核：固定拍摄角度补拍的图像，未通过自动目标外观验收。','footnote'));
+        if(r.optical_zoom)box.append(el('p','采集倍率：'+r.optical_zoom+' 倍'));
+      }
+      if(r.image_status==='fixed_angle_photo_accepted_by_human'){
+        box.append(el('p','人工已确认保留这张采集图；采集机位仍待重复回访验证。','footnote'));
+        if(r.optical_zoom)box.append(el('p','采集倍率：'+r.optical_zoom+' 倍'));
+      }
+      if(r.image_status==='one_shot_reference_checked_unverified_visit'){
+        box.append(el('p','单轮回访新图：两次新图外观匹配通过；允许偏离中心，尚未验收周期巡检机位。','footnote'));
+      }
+      if(r.image_status==='first_capture_reference_quality_review_required'){
+        box.append(el('p','首次采集参考已保存：'+(r.center_status==='reachable_pose_with_residual'?'受限位置拍摄，保留偏心；':'居中检查通过；')+'倍率 '+r.optical_zoom+' 倍。离开后回访与画面边界检查通过，请查看实际完整性和清晰度。','footnote'));
+      }
+      if(r.image_status==='round_unmatched_diagnostic_not_accepted'){
+        box.append(el('p','目标不确定：本张仅保留为诊断图，该表未通过本轮采集检查。','footnote'));
+      }
+      if(r.image_status==='automatic_reference_after_independent_revisit'){
+        box.append(el('p','已自动建立回访位置，离开后两次新图校验通过。','footnote'));
+      }
+      if(r.image_status==='software_preset_fresh_reference_checked'){
+        box.append(el('p','按已验证位置自动采集，两次新图校验通过。','footnote'));
+      }
+      if(['diagnostic_not_commissioned','software_preset_uncertain_diagnostic'].includes(r.image_status)){
+        box.append(el('p','本次未通过校验，仅保留诊断图。','footnote'));
+      }
+      if(r.image&&/^[a-f0-9]{64}\.(jpg|png)$/.test(r.image)){
+        const link=el('a');link.href='/images/'+r.image;link.target='_blank';link.rel='noopener noreferrer';
+        const picture=el('img');picture.src=link.href;picture.alt=r.instrument_id+' · '+r.status;picture.loading='lazy';picture.className='capture-evidence';
+        link.append(picture);box.append(link);
+      }
+    });
+    $('jobs').append(box);
+  });
   $('audit').replaceChildren();
   state.audit.forEach(item=>{const row=el('div',null,'audit-row');row.append(el('time',stamp(item.timestamp)),el('b',actionLabels[item.action]||item.action),el('code',JSON.stringify(item.detail)));$('audit').append(row);});
 }
@@ -294,26 +413,31 @@ $('scene').addEventListener('pointerup',event=>{
   const box=[Math.min(drawStart[0],p[0]),Math.min(drawStart[1],p[1]),Math.max(drawStart[0],p[0]),Math.max(drawStart[1],p[1])];
   setDrawMode(null);
   if(box[2]-box[0]<2||box[3]-box[1]<2){toast('框选范围太小，请重新拖动。',true);return;}
-  if(mode==='add')act('/api/candidates/add',{frame_id:frameId,bbox:box},'已补充候选，请人工确认',true);
+  if(mode==='add')act('/api/candidates/add',{frame_id:frameId,bbox:box},
+    state.capabilities?.automatic_registration?'补漏已加入自动建档队列':'已补充候选，请人工确认',!state.capabilities?.automatic_registration);
   else if(selected())review(selected(),'bbox',{bbox:box});
 });
 $('scene').addEventListener('pointercancel',()=>setDrawMode(null));
 document.addEventListener('keydown',event=>{if(event.key==='Escape')setDrawMode(null);});
 document.querySelectorAll('[data-tab]').forEach(node=>node.addEventListener('click',()=>setTab(node.dataset.tab)));
 $('refresh').addEventListener('click',()=>load(true).catch(error=>toast(error.message,true)));
-$('map-select').addEventListener('change',()=>{mapId=$('map-select').value;frameId=null;selectedId=null;$('reference-result').hidden=true;setDrawMode(null);load(true);});
+$('map-select').addEventListener('change',()=>{if(typeof Initialization!=='undefined')Initialization.unfollow();mapId=$('map-select').value;sceneSelection.remember(mapId);frameId=null;selectedId=null;$('reference-result').hidden=true;setDrawMode(null);load(true).catch(error=>toast(error.message,true));});
+$('scene-open-history').addEventListener('click',()=>{window.InspectionResults?.showHistory(mapId);$('results-panel').scrollIntoView({block:'start',behavior:'smooth'});});
 $('frame-select').addEventListener('change',()=>{frameId=$('frame-select').value;selectedId=reviewCandidates().find(c=>c.frame_id===frameId)?.id;setDrawMode(null);renderReview();});
 $('show-rejected').addEventListener('change',renderReview);
 $('panorama-only').addEventListener('change',()=>{const candidate=reviewCandidates()[0];selectedId=candidate?.id||null;if(candidate)frameId=candidate.frame_id;setDrawMode(null);renderReview();});
 $('draw-add').addEventListener('click',()=>setDrawMode('add'));
 $('draw-edit').addEventListener('click',()=>setDrawMode('edit'));
 $('cancel-draw').addEventListener('click',()=>setDrawMode(null));
-$('stop').addEventListener('click',()=>act('/api/schedule/stop',{},'巡检已暂停；当前审核版本不发送云台命令'));
+$('stop').addEventListener('click',()=>act('/api/schedule/stop',{},'已请求暂停采集和自动建档，请查看停止状态。'));
 $('invalidate').addEventListener('click',()=>{
   if(confirm('将当前场景置为失效，并暂停该场景的仪表采集。历史图像与审核记录会保留，之后需要重新建图。'))act('/api/maps/invalidate',{map_id:mapId},'场景已失效，需重新建图');
 });
-$('schedule-form').addEventListener('submit',event=>{event.preventDefault();act('/api/schedule/configure',{map_id:mapId,interval_seconds:Number($('interval').value)},'巡检间隔已保存；执行保持暂停');});
+$('schedule-form').addEventListener('submit',event=>{event.preventDefault();act('/api/schedule/configure',{map_id:mapId,interval_seconds:Number($('interval').value),round_limit:$('round-limit').value.trim()===''?null:Number($('round-limit').value)},'巡检配置已保存；执行保持暂停');});
 $('arm').addEventListener('click',()=>act('/api/schedule/arm',{},'周期巡检已启用'));
+$('run-once').addEventListener('click',()=>act('/api/patrol/run-once',{map_id:mapId},'单轮自动采集已开始；结束后停止'));
+$('annotation-discover').addEventListener('click',()=>act('/api/annotations/discover',{map_id:mapId},'检测候选已加入自动复检队列'));
+$('annotation-resume').addEventListener('click',()=>act('/api/annotations/resume',{},'自动建档已继续'));
 $('reference-plan').addEventListener('click',async()=>{
   const requestedMap=mapId,revision=state.revision;
   try{
@@ -337,11 +461,11 @@ $('reference-plan').addEventListener('click',async()=>{
 });
 $('route-plan').addEventListener('click',async()=>{
   const start=frame()?.pose||{pan:0,tilt:0,zoom:1};
-  try{const result=await request('/api/plan/route',{map_id:mapId,start});$('route-result').replaceChildren();
+  try{const result=await request('/api/plan/capture-round',{map_id:mapId,revision:state.revision,start});$('route-result').replaceChildren();
     if(!result.stops.length&&!result.blocked.length)$('route-result').append(el('p','当前没有启用的仪表。'));
     result.stops.forEach((item,index)=>$('route-result').append(el('div',(index+1)+' → '+item.id+' '+item.name)));
-    result.blocked.forEach(item=>$('route-result').append(el('div',item.id+'：待回访标定，未纳入可执行路线')));
-    if(result.stops.length)$('route-result').append(el('p','预估角距离 '+result.angular_cost+'°；非全局最优，实际耗时待验证。'));
+    result.blocked.forEach(item=>$('route-result').append(el('div',item.id+'：需要先完成首次采集并建立可用参考照片')));
+    if(result.stops.length)$('route-result').append(el('p','已按保存的采集参考规划路线，预估角距离 '+result.angular_cost+'°。这里只预览；执行前需读取相机当前起点，周期采集保持关闭。'));
   }catch(error){toast(error.message,true);}
 });
 $('scan-form').addEventListener('submit',async event=>{
@@ -356,4 +480,4 @@ $('scan-form').addEventListener('submit',async event=>{
   }catch(error){toast(error.message,true);}
 });
 load().catch(error=>{$('connection').textContent='连接失败';toast(error.message,true);});
-setInterval(()=>{if(!busy&&!drawMode)load().catch(()=>{$('connection').textContent='连接中断 · 本地记录仍保留';});},5000);
+setInterval(()=>{if(!busy&&!drawMode&&!window.PanoramaWorkbench?.active()&&(typeof OverviewReview==='undefined'||!OverviewReview.active()))load().catch(()=>{$('connection').textContent='连接中断 · 正在自动恢复';});},1200);

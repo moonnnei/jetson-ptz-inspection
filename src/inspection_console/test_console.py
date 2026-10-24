@@ -472,6 +472,18 @@ class HTTPTests(RegistryFixture):
         self.assertEqual(error.exception.code, 409)
         error.exception.close()
 
+    def test_schedule_optional_round_limit_and_legacy_clients(self):
+        s=self.state();body=dict(revision=s['revision'],map_id=s['maps'][0]['id'],interval_seconds=60,round_limit=5)
+        with self.post('/api/schedule/configure',body) as response:
+            result=json.loads(response.read().decode())
+        self.assertEqual(result['result']['round_limit'],5)
+        body.update(revision=self.state()['revision'],round_limit=True)
+        with self.assertRaises(HTTPError) as error:self.post('/api/schedule/configure',body)
+        self.assertEqual(error.exception.code,400);error.exception.close()
+        body.pop('round_limit')
+        with self.post('/api/schedule/configure',body) as response:result=json.loads(response.read().decode())
+        self.assertIsNone(result['result']['round_limit'])
+
 
 if __name__ == '__main__':
     unittest.main()

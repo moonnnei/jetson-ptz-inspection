@@ -20,6 +20,7 @@ import uuid
 
 from planner import pose
 from ring_coordinates import parameters as ring_parameters,ring_box
+from overview_review import source_proposal
 
 
 class Conflict(ValueError):
@@ -119,7 +120,8 @@ def initial_state():
                 next_instrument=1, jobs=[],
                 schedule=dict(map_id=None, interval_seconds=300, enabled=False,
                               state='not_configured', next_due_at=None,
-                              semantics='fixed_delay_after_completion'))
+                              semantics='fixed_delay_after_completion',round_limit=None,
+                              completed_rounds=0,attempted_rounds=0,batch_id=None))
 
 
 class Store:
@@ -213,6 +215,7 @@ class Store:
         provenance = manifest.get('provenance', 'historical_import')
         if provenance not in ('historical_import', 'bounded_scan_capture'):
             raise ValueError('unsupported map provenance')
+        registration_requested=boolean(manifest.get('automatic_registration_requested',provenance=='bounded_scan_capture'))
         frames = manifest.get('frames', [])
         if not 1 <= len(frames) <= 240:
             raise ValueError('import requires 1-240 frames')
@@ -286,6 +289,7 @@ class Store:
             state['maps'].append(dict(id=map_id, title=title, created_at=now(),
                 status='review', kind='view_index', provenance=provenance,
                 geometry_status='not_calibrated', motion_verified=False,
+                automatic_registration_requested=registration_requested,
                 overview=overview,
                 note='局部配准总览仅用于查看；云台回访尚未标定。' if overview else '原始视图索引；未生成全景拼接或验证云台回访坐标。'))
             state['frames'].extend(new_frames)
@@ -314,7 +318,7 @@ class Store:
             with target.open('xb') as stream:stream.write(data)
         return dict(image=filename,sha256=sha,width=size[0],height=size[1])
 
-    def review(self, revision, candidate_id, action, name=None, target_id=None, box=None):
+    def _reviewer(self, candidate_id, action, name=None, target_id=None, box=None):
         def apply(state):
             candidate = self.find(state, 'candidates', candidate_id)
             self.editable(state, candidate['map_id'])
@@ -341,6 +345,9 @@ class Store:
                 candidate.update(state='rejected' if action == 'reject' else 'pending', merged_into=None)
                 if asset:
                     asset['enabled'] = False
+                if action=='reject':
+                    for q in state.get('annotation_queue',[]):
+                        if q.get('candidate_id')==candidate_id and q['state']=='queued':q.update(state='excluded',finished_at=now())
                 result = candidate_id
             elif action == 'merge':
                 target = self.find(state, 'candidates', target_id)
@@ -367,8 +374,93 @@ class Store:
                 raise ValueError('unknown review action')
             self.pause(state, 'review_changed_requires_rearm')
             return result
+        return apply
+
+    def review(self, revision, candidate_id, action, name=None, target_id=None, box=None):
+        if action in ('reject','restore'):
+            return self.review_many(revision,[candidate_id],action)
         return self.change(revision, 'review_' + action,
-                           dict(candidate_id=candidate_id, target_id=target_id, name=name, bbox=box), apply)
+                           dict(candidate_id=candidate_id, target_id=target_id, name=name, bbox=box),
+                           self._reviewer(candidate_id, action, name, target_id, box))
+
+    def review_many(self, revision, candidate_ids, action):
+        if (not isinstance(candidate_ids, list) or not 1 <= len(candidate_ids) <= 100
+                or any(not isinstance(key, str) for key in candidate_ids)
+                or len(set(candidate_ids)) != len(candidate_ids)
+                or action not in ('confirm', 'reject', 'restore')):
+            raise ValueError('select 1-100 distinct candidates and a supported action')
+        def apply(state):
+            items = [self.find(state, 'candidates', key) for key in candidate_ids]
+            if len({c['map_id'] for c in items}) != 1:
+                raise ValueError('batch review must stay in one scene')
+            previous=copy.deepcopy(dict(state,revision=revision))
+            from review_groups import expand_groups
+            keys=expand_groups(state,candidate_ids) if action in ('reject','restore') else candidate_ids
+            result=[self._reviewer(key, action)(state) for key in keys]
+            mid=items[0]['map_id']
+            if any(a['map_id']==mid and a.get('commissioning') for a in state['instruments']):
+                from registry_annotations import rebind_unchanged_presets
+                rebind_unchanged_presets(state,mid,previous)
+            return result
+        return self.change(revision, 'review_many_' + action,
+                           dict(candidate_ids=candidate_ids, action=action), apply)
+
+    def bind_overview_geometry(self, revision, map_id, overview_sha256, projection, source_binding):
+        """CLI-only binding of an existing renderer's saved geometry and sources."""
+        projection = ring_parameters(projection)
+        def apply(state):
+            self.editable(state, map_id)
+            scene = self.find(state, 'maps', map_id)
+            overview = scene.get('overview') or {}
+            if (overview.get('kind') != 'pose_projected_ring_preview'
+                    or overview.get('sha256') != overview_sha256
+                    or (overview.get('width'), overview.get('height')) != (projection['width'], projection['height'])
+                    or overview.get('ring_projection')):
+                raise ValueError('existing renderer geometry is missing, changed or already bound')
+            frames = [f for f in state['frames'] if f['map_id'] == map_id]
+            actual = [{k: f[k] for k in ('sha256','width','height','orientation','pose')} for f in frames]
+            if actual != source_binding or not frames:
+                raise ValueError('source binding differs from this scan')
+            for frame in frames:
+                if ((frame['width'],frame['height'],frame['orientation']) !=
+                        (projection['source_width'],projection['source_height'],projection['source_orientation'])
+                        or not frame['pose']
+                        or (projection['version']==1 and frame['pose']['tilt'] != frames[0]['pose']['tilt'])
+                        or (projection['version']==2 and frame['pose']['tilt'] not in projection['row_tilts'])
+                        or frame['pose']['zoom'] != frames[0]['pose']['zoom']):
+                    raise ValueError('ring geometry requires matching fixed-tilt, fixed-zoom sources')
+            overview.update(ring_projection=projection,source_mapping='estimated_cylindrical_review')
+            self.pause(state, 'overview_review_updated_requires_rearm')
+            return map_id
+        return self.change(revision, 'overview_geometry_bound',
+                           dict(map_id=map_id,overview_sha256=overview_sha256,projection=projection),apply)
+
+    def add_overview_candidate(self, revision, map_id, overview_sha256, overview_box,
+                               frame_id, source_box, source_reviewed):
+        if source_reviewed is not True:
+            raise ValueError('inspect the high-resolution source before saving')
+        key = identifier('candidate')
+        def apply(state):
+            self.editable(state, map_id)
+            proposal = source_proposal(dict(state, revision=revision), map_id, overview_sha256, overview_box)
+            choice = next((c for c in proposal['choices'] if c['frame_id'] == frame_id), None)
+            if choice is None:
+                raise ValueError('source frame does not cover this overview box')
+            frame = self.find(state, 'frames', frame_id)
+            if sum(c['map_id'] == map_id for c in state['candidates']) >= 500:
+                raise ValueError('map candidate budget reached')
+            state['candidates'].append(dict(id=key, map_id=map_id, frame_id=frame_id,
+                bbox=bbox(source_box, frame['width'], frame['height']), confidence=None,
+                state='pending', source='human_panorama_added', created_at=now(),
+                instrument_id=None, merged_into=None,
+                manual_overview=dict(overview_sha256=overview_sha256, bbox=proposal['bbox'],
+                    source_sha256=choice['sha256'], proposed_source_bbox=choice['bbox'],
+                    source_reviewed=True, mapping=proposal['mapping'])))
+            self.pause(state, 'review_changed_requires_rearm')
+            return key
+        return self.change(revision, 'candidate_add_overview', dict(map_id=map_id,
+            overview_sha256=overview_sha256, overview_bbox=overview_box,
+            frame_id=frame_id, source_bbox=source_box), apply)
 
     def add_candidate(self, revision, frame_id, box):
         key = identifier('candidate')
@@ -395,6 +487,50 @@ class Store:
             self.pause(state, 'registry_changed_requires_rearm')
             return key
         return self.change(revision, 'instrument_update', dict(id=key, name=name, enabled=enabled), apply)
+
+    def rename_instrument(self, revision, key, name):
+        """Change the display name without changing enablement or preset evidence."""
+        value = text(name)
+        def apply(state):
+            asset = self.find(state, 'instruments', key)
+            self.editable(state, asset['map_id'])
+            if state['schedule']['enabled']:
+                raise Conflict('pause periodic capture before renaming an instrument')
+            asset['name'] = value
+            return key
+        return self.change(revision, 'instrument_rename', dict(id=key, name=value), apply)
+
+    def bind_accepted_photo_box(self, revision, job_id, instrument_id, box):
+        """CLI-only reference annotation for an already user-accepted photo.
+
+        This selects pixels for a later matching trial, never a verified pose.
+        """
+        def apply(state):
+            job=self.find(state,'jobs',job_id);self.editable(state,job['map_id'])
+            asset=self.find(state,'instruments',instrument_id)
+            candidate=self.find(state,'candidates',asset['candidate_id'])
+            if asset['map_id']!=job['map_id'] or candidate['state']!='confirmed':
+                raise ValueError('photo must belong to a confirmed instrument')
+            result=next((r for r in job['results'] if r['instrument_id']==instrument_id),None)
+            if (job['status']!='reviewed_capture' or not result
+                    or result.get('image_status')!='fixed_angle_photo_accepted_by_human'
+                    or result.get('manual_review',{}).get('status')!='accepted'
+                    or result.get('reference_bbox')):
+                raise ValueError('reference box requires a previously accepted photo without a box')
+            name=result['image']
+            if not re.match(r'^[a-f0-9]{64}\.(jpg|png)$',name):raise ValueError('invalid photo name')
+            path=self.images/name
+            if path.is_symlink() or path.resolve().parent!=self.images.resolve():raise ValueError('invalid photo path')
+            data=path.read_bytes()
+            if hashlib.sha256(data).hexdigest()!=name.split('.')[0]:raise ValueError('photo changed')
+            size,unused=image_size(data)
+            result['reference_bbox']=dict(bbox=bbox(box,*size),
+                selection='user_accepted_photo_display_crop',
+                scope='image_matching_trial_only_not_pose_commissioning')
+            self.pause(state,'photo_reference_prepared_periodic_not_enabled')
+            return job_id
+        return self.change(revision,'accepted_photo_reference_box',
+                           dict(job_id=job_id,instrument_id=instrument_id,bbox=box),apply)
 
     def import_panorama_candidates(self,revision,payload):
         """Trusted CLI import; attach image-space proposals without confirming IDs."""
@@ -487,15 +623,18 @@ class Store:
         return self.change(revision,'panorama_candidates_import',dict(map_id=payload['map_id'],
             operation_id=payload['operation_id'],observations=len(observations)),apply)
 
-    def configure_schedule(self, revision, map_id, seconds):
+    def configure_schedule(self, revision, map_id, seconds, round_limit=None):
         if type(seconds) is not int or not 60 <= seconds <= 86400:
             raise ValueError('interval must be an integer from 60 to 86400 seconds')
+        if round_limit is not None and (type(round_limit) is not int or not 1<=round_limit<=1000):
+            raise ValueError('round_limit must be null or an integer from 1 to 1000')
         def apply(state):
             self.editable(state, map_id)
             state['schedule'].update(map_id=map_id, interval_seconds=seconds, enabled=False,
-                state='awaiting_hardware_validation', next_due_at=None)
+                state='awaiting_hardware_validation', next_due_at=None,round_limit=round_limit,
+                completed_rounds=0,attempted_rounds=0,batch_id=None)
             return copy.deepcopy(state['schedule'])
-        return self.change(revision, 'schedule_configure', dict(map_id=map_id, seconds=seconds), apply)
+        return self.change(revision, 'schedule_configure', dict(map_id=map_id, seconds=seconds,round_limit=round_limit), apply)
 
     def invalidate(self, revision, map_id):
         def apply(state):
@@ -521,10 +660,28 @@ class Store:
 
     def image_path(self, key):
         # Only content-addressed images registered in the database are reachable.
+        if not isinstance(key,str) or not re.fullmatch(r'[a-f0-9]{64}\.(?:jpg|png)',key):
+            raise ValueError('invalid image key')
         state=self.snapshot()
         names={f['image'] for f in state['frames']}
         names.update(f['raw_source']['image'] for f in state['frames'] if f.get('raw_source'))
         names.update(m['overview']['image'] for m in state['maps'] if m.get('overview'))
+        names.update(a['commissioning']['image'] for a in state['instruments']
+                     if a.get('commissioning') and re.fullmatch(r'[a-f0-9]{64}\.(?:jpg|png)',a['commissioning'].get('image','')))
+        # CLI-validated current pilot/capture results can introduce fresh images
+        # that are not scan-source frames. Never allow arbitrary job paths.
+        names.update(value for job in state['jobs'] for result in job.get('results',[])+job.get('progress_results',[])
+                     for value in [result.get('image'),result.get('crop_image')]
+                     if isinstance(value,str) and re.fullmatch(r'[a-f0-9]{64}\.(?:jpg|png)',value))
+        if key not in names:
+            # Older rounds remain available after leaving the recent-job window.
+            # Only registered, content-addressed image keys are considered.
+            with self.connection() as db:
+                for row in db.execute('SELECT payload FROM job_history'):
+                    job = json.loads(row[0])
+                    if any(key in (r.get('image'),r.get('crop_image')) for r in job.get('results',[])):
+                        names.add(key)
+                        break
         if key not in names:
             raise ValueError('unknown image')
         path = (self.images / key).resolve()

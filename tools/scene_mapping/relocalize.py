@@ -4,6 +4,7 @@ Global ORB/RANSAC predicts an ROI, then bounded template and inner-face checks
 verify local appearance. Scores are correlations, not confidence probabilities.
 No pose is inferred, no camera is controlled and no instrument is commissioned.
 """
+from __future__ import division
 import math
 import cv2
 import numpy as np
@@ -14,6 +15,11 @@ MIN_SCORE = .72
 MIN_INNER = .60
 MIN_GAP = .08
 MAX_LOCAL_SHIFT_FRACTION = .25
+
+
+def finite(value):
+    # Python 2.7 is used only by the legacy TX2 OpenCV image worker.
+    return not (math.isnan(value) or math.isinf(value))
 
 
 def checked_image(image):
@@ -28,7 +34,7 @@ def locate(source, target, box, registration=None):
     checked_image(source)
     checked_image(target)
     if (not isinstance(box, (list, tuple)) or len(box) != 4
-            or any(type(x) not in (int, float) or not math.isfinite(x) for x in box)):
+            or any(type(x) not in (int, float) or not finite(x) for x in box)):
         raise ValueError('invalid reference bbox')
     x1, y1, x2, y2 = [int(round(x)) for x in box]
     height, width = source.shape[:2]

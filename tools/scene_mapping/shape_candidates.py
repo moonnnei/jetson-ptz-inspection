@@ -3,6 +3,7 @@
 Designed as a proposal stage, not as a semantic meter detector. All coordinates
 are exclusive-right/bottom pixel boxes in the original input image.
 """
+from __future__ import division
 import math
 
 import cv2
@@ -39,7 +40,7 @@ def padded_box(box, width, height, padding=0.2):
 def _contrast(gray, box):
     x, y, x2, y2 = [int(v) for v in box]
     patch = gray[y:y2, x:x2]
-    if min(patch.shape, default=0) < 4:
+    if not patch.size or min(patch.shape) < 4:
         return 0.
     h, w = patch.shape
     inner = patch[max(1,h//5):max(2,h-h//5), max(1,w//5):max(2,w-w//5)]
@@ -54,7 +55,7 @@ def propose(image, limit=12):
         raise ValueError('Unsupported input dimensions or proposal budget')
     height, width = image.shape[:2]
     scale = min(1., CONFIG['max_work_side']/max(height,width))
-    work = cv2.resize(image, (round(width*scale), round(height*scale)), interpolation=cv2.INTER_AREA)
+    work = cv2.resize(image, (int(round(width*scale)), int(round(height*scale))), interpolation=cv2.INTER_AREA)
     wh, ww = work.shape[:2]
     sx, sy = width/ww, height/wh
     gray = cv2.cvtColor(work, cv2.COLOR_BGR2GRAY)

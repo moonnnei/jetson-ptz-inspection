@@ -26,6 +26,20 @@ jobs:
           python-version: '3.11'
       - name: Standard-library tests and model hashes
         run: python scripts/test_local.py
+      - name: Pinned viewer API and workbench regressions
+        run: |
+          node scripts/test_osd_runtime.js
+          node scripts/test_panorama_workbench_ui.js
+          node scripts/test_vendor_csp.js
+          node scripts/test_results_model.js
+          node scripts/test_results_ui.js
+          node scripts/test_scene_navigation_ui.js
+          node scripts/test_workbench_ui.js
+          node scripts/test_console_live_ui.js
+          node scripts/test_initialization_ui.js
+          node scripts/test_first_capture_ui.js
+          node scripts/test_patrol_ui.js
+          node scripts/test_overview_ui.js
       - name: Public release audit and file manifest
         run: python scripts/check_release.py --verify-manifest
       - name: Bash syntax
